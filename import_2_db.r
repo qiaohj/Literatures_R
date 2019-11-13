@@ -2,109 +2,17 @@ library("XML")
 library("RMySQL")
 library("R.utils")
 
-killDbConnections <- function () {
-  
-  all_cons <- dbListConnections(MySQL())
-  
-  print(all_cons)
-  
-  for(con in all_cons)
-    +  dbDisconnect(con)
-  
-  print(paste(length(all_cons), " connections killed."))
-  
-}
-killDbConnections()
-con<-dbConnect(MySQL(), user="root", password="mikania", 
-               dbname="PubMed", host="localhost")
+
 
 #rs<-dbSendQuery(con, "select count(1) c, time from sensors group by time")
 
 #df<-fetch(rs, n=-1)
 
 setwd("~/Experiments/PubMed/Script/PubMed_R")
-insertKeyword<-function(node, type){
-  attrs<-xmlAttrs(node)
-  text<-gsub("'", "’", xmlValue(node))
-  if ("UI" %in% names(attrs)){
-    UI<-attrs[which(names(attrs)=="UI")]
-  }else{
-    UI<-""
-  }
-  if ("MajorTopicYN" %in% names(attrs)){
-    MajorTopicYN<-attrs[which(names(attrs)=="MajorTopicYN")]
-  }else{
-    MajorTopicYN<-""
-  }
-  if (MajorTopicYN=="Y"){
-    MajorTopicYN<-1
-  }else{
-    MajorTopicYN<-0
-  }
-  sql<-sprintf("SELECT * FROM Keyword WHERE UI='%s'", UI)
-  if (!is_exist_db(sql)){
-    sql<-sprintf("INSERT INTO Keyword (UI, Name, Type) VALUES ('%s', '%s', '%s')", UI, text, type)
-    dbExecute(con, sql)
-  }
-  return(data.frame(UI=UI, MajorTopicYN=MajorTopicYN))
-}
-
-
-getXmlValue<-function(xml, path, type){
-  v<-xpathApply(xml, path, xmlValue)
-  if (type!="list"){
-    if (length(v)==0){
-      v<-NA
-    }else{
-      v<-v[[1]]
-    }
-    if (type=="character"){
-      if (is.na(v)){
-        v<-""
-      }
-    }
-    if (type=="numeric"){
-      if (is.na(v)){
-        v<- -9999
-      }else{
-        if (v==""){
-          v<- -9999
-        }
-        v<-as.numeric(v)
-      }
-    }
-    if (type=="boolean"){
-      if (is.na(v)){
-        v<-0
-      }else{
-        if (v=="Y"){
-          v<-1
-        }else{
-          v<-0
-        }
-      }
-    }
-  }
-  if (type=="character"){
-    v<-fix_sql(v)
-  }
-  return (v)
-}
-is_exist_db<-function(sql){
-  rs<-dbSendQuery(con, sql)
-  df_ui<-fetch(rs, n=-1)
-  dbClearResult(rs)
-  if (nrow(df_ui)==0){
-    return(F)
-  }else{
-    return(T)
-  }
-}
-fix_sql<-function(str){
-  str<-gsub("'", "’", str)
-  str<-gsub("\\\\", "", str)
-  return (str)
-}
+source("functions.r")
+killDbConnections()
+con<-dbConnect(MySQL(), user="root", password="mikania", 
+               dbname="PubMed", host="localhost")
 fs<-list.files("../../baseline", pattern="\\.gz$")
 #fs<-c("pubmed19n0807.xml.gz")
 from = 100
@@ -162,9 +70,9 @@ for (xxx in c(from:to)){
     ArticleTitle<-getXmlValue(item, "//Article/ArticleTitle", "character") 
     Journal_Title<-getXmlValue(item, "//Article/Journal/Title", "character")
     ISOAbbreviation<-getXmlValue(item, "//Article/Journal/ISOAbbreviation", "character")
-    PubMedPubYear<-getXmlValue(item, "//DateCompleted/Year", "numeric")
-    PubMedPubMonth<-getXmlValue(item, "//DateCompleted/Month", "numeric")
-    PubMedPubDay<-getXmlValue(item, "//DateCompleted/Day", "numeric")
+    DateCompletedYear<-getXmlValue(item, "//DateCompleted/Year", "numeric")
+    DateCompletedMonth<-getXmlValue(item, "//DateCompleted/Month", "numeric")
+    DateCompletedDay<-getXmlValue(item, "//DateCompleted/Day", "numeric")
     Language<-getXmlValue(item, "//Article/Language", "character") 
     ArticleYear<-getXmlValue(item, "//Article/ArticleDate/Year", "numeric")
     ArticleMonth<-getXmlValue(item, "//Article/ArticleDate/Month", "numeric") 
@@ -181,13 +89,13 @@ for (xxx in c(from:to)){
     
     sql<-sprintf("INSERT INTO `PubMed`.`Article` (`PMID`, `Journal_ISSN`, `Volume`,
     `Issue`,`Abstract`,`Pagination`,`Journal_Title`,`ISOAbbreviation`,`ArticleTitle`,
-    `PubMedPubYear`,`PubMedPubMonth`,`PubMedPubDay`,`Language`,`ArticleYear`,`ArticleMonth`,
+    `DateCompleteYear`,`DateCompleteMonth`,`DateCompleteDay`,`Language`,`ArticleYear`,`ArticleMonth`,
     `ArticleDay`,`Journal_ISSN_Type`) VALUES ('%d',  '%s', '%s', '%s', '%s', '%s', '%s', '%s',
     '%s','%s','%s','%s','%s','%s','%s','%s','%s');", PMID, Journal_ISSN, Volume,
                  Issue,Abstract,Pagination,Journal_Title,ISOAbbreviation,ArticleTitle,
-                 PubMedPubYear,PubMedPubMonth,PubMedPubDay,Language,ArticleYear,ArticleMonth,
+                 DateCompleteYear,DateCompleteMonth,DateCompleteDay,Language,ArticleYear,ArticleMonth,
                  ArticleDay,Journal_ISSN_Type)
-      
+    
     dbExecute(con, sql)
     AuthorList<-getNodeSet(item, "//Article/AuthorList/Author")
     j=2
@@ -215,7 +123,7 @@ for (xxx in c(from:to)){
         }else{
           AuthorID<-df_auther[1, "ID"]
         }
-        sql<-sprintf("INSERT INTO `PubMed`.`Artile_Author`(`PMID`,`AuthorID`, Sort) VALUES (%d, %d, %d);", 
+        sql<-sprintf("INSERT INTO `PubMed`.`Article_Author`(`PMID`,`AuthorID`, Sort) VALUES (%d, %d, %d);", 
                      PMID, AuthorID, j)
         dbExecute(con, sql)
         #free(author_item)
@@ -233,7 +141,7 @@ for (xxx in c(from:to)){
           for (k in c(1:length(DescriptorName))){
             DescriptorName_item<-DescriptorName[[k]]
             ids<-insertKeyword(DescriptorName_item, "DescriptorName")
-            sql<-sprintf("INSERT INTO `PubMed`.`Artile_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
+            sql<-sprintf("INSERT INTO `PubMed`.`Article_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
               `Type`, `Sort`, `Group`) VALUES (%d, '%s', %d, '%s', %d, %d);", 
                          PMID, ids$UI, ids$MajorTopicYN, "DescriptorName", Sort, j)
             dbExecute(con, sql)
@@ -245,7 +153,7 @@ for (xxx in c(from:to)){
           for (k in c(1:length(QualifierName))){
             QualifierName_item<-QualifierName[[k]]
             ids<-insertKeyword(QualifierName_item, "QualifierName")
-            sql<-sprintf("INSERT INTO `PubMed`.`Artile_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
+            sql<-sprintf("INSERT INTO `PubMed`.`Article_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
               `Type`, `Sort`, `Group`) VALUES (%d, '%s', %d, '%s', %d, %d);", 
                          PMID, ids$UI, ids$MajorTopicYN, "QualifierName", Sort, j)
             dbExecute(con, sql)
@@ -265,7 +173,7 @@ for (xxx in c(from:to)){
           for (k in c(1:length(NameOfSubstance))){
             NameOfSubstance_item<-NameOfSubstance[[k]]
             ids<-insertKeyword(NameOfSubstance_item, "NameOfSubstance")
-            sql<-sprintf("INSERT INTO `PubMed`.`Artile_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
+            sql<-sprintf("INSERT INTO `PubMed`.`Article_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
               `Type`, `Sort`, `Group`) VALUES (%d, '%s', %d, '%s', %d, %d);", 
                          PMID, ids$UI, ids$MajorTopicYN, "NameOfSubstance", k, j)
             dbExecute(con, sql)
@@ -291,7 +199,7 @@ for (xxx in c(from:to)){
                        GrantID, Acronym, Agency, Country)
           dbExecute(con, sql)
         }
-        sql<-sprintf("INSERT INTO `PubMed`.`Artical_Grant` (`ArticalID`, `GrantID`, `Sort`) VALUES
+        sql<-sprintf("INSERT INTO `PubMed`.`Article_Grant` (`PMID`, `GrantID`, `Sort`) VALUES
           (%d, '%s', %d);", PMID, GrantID, j)
         dbExecute(con, sql)
         #free(Grant_item)
@@ -304,7 +212,7 @@ for (xxx in c(from:to)){
       for (j in c(1:length(PublicationTypeList))){
         PublicationType_item<-PublicationTypeList[[j]]
         ids<-insertKeyword(PublicationType_item, "PublicationType")
-        sql<-sprintf("INSERT INTO `PubMed`.`Artile_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
+        sql<-sprintf("INSERT INTO `PubMed`.`Article_Keyword` (`PMID`, `KeywordID`, `MajorTopicYN`,
               `Type`, `Sort`, `Group`) VALUES (%d, '%s', %d, '%s', %d, %d);", 
                      PMID, ids$UI, ids$MajorTopicYN, "PublicationType", 0, j)
         dbExecute(con, sql)
@@ -320,7 +228,7 @@ for (xxx in c(from:to)){
         attrs<-xmlAttrs(ArticleId_item)
         IdType<-attrs[which(names(attrs)=="IdType")]
         text<-gsub("'", "’", xmlValue(ArticleId_item))
-        sql<-sprintf("INSERT INTO `PubMed`.`ArticalIDType` (`IdType`, `ArticalID`, `Text`) VALUES
+        sql<-sprintf("INSERT INTO `PubMed`.`ArticleIDType` (`IdType`, `PMID`, `Text`) VALUES
           ('%s', %d, '%s');", IdType, PMID, text)
         dbExecute(con, sql)
         #free(ArticleId_item)
@@ -342,7 +250,7 @@ for (xxx in c(from:to)){
             IdType<-attrs[which(names(attrs)=="IdType")]
             CitationID<-gsub("'", "’", xmlValue(ArticleId_item))
             #free(ArticleId_item)
-            sql<-sprintf("INSERT INTO `PubMed`.`Reference` (`ArticleID`, `Citation`,
+            sql<-sprintf("INSERT INTO `PubMed`.`Reference` (`PMID`, `Citation`,
               `CitationID`, `CitationType`) VALUES (%d, '%s', '%s', '%s');", 
                          PMID, Citation, CitationID, IdType)
             dbExecute(con, sql)
