@@ -52,4 +52,4 @@ result_all<-result_1[which(result_1$PMID %in% id_all),]
 table(result_all$ArticleYear)
 table(result_all$Journal_Title)
 head(result_all)
-write.csv(result_all, "../mountain_keys_yuanbao.csv", row.names=F)
+write.csv(result_all, "../Tables/mountain_keys_yuanbao.csv", row.names=F)
