@@ -50,7 +50,6 @@ getXmlValue<-function(xml, path, type){
   }
   return (v)
 }
-<<<<<<< HEAD
 is_exist_db<-function(sql){
   rs<-dbSendQuery(con, sql)
   df_ui<-fetch(rs, n=-1)
@@ -65,30 +64,21 @@ con<-dbConnect(MySQL(), user="root", password="mikania",
                dbname="PubMed", host="localhost")
 
 fs<-list.files("/media/huijieqiao/QNAS/PubMed/baseline", pattern="\\.gz$")
-=======
 
-fs<-list.files("../../baseline", pattern="\\.gz$")
->>>>>>> 5c9450946e8e3fb23f77715ee0d4980ab30957b4
 #fs<-c("pubmed19n0807.xml.gz")
 from = 100
 args = commandArgs(trailingOnly=TRUE)
 from<-as.numeric(args[1])
 to<-as.numeric(args[2])
-<<<<<<< HEAD
-=======
-skip<-as.numeric(args[3])
->>>>>>> 5c9450946e8e3fb23f77715ee0d4980ab30957b4
+
 #from=608
 #to=608
 #for (xxx in c(from:length(fs))){
 for (xxx in c(from:to)){
   f<-fs[xxx]
   print(paste(xxx, to, f, sep="/"))
-<<<<<<< HEAD
   xml<-sprintf("/media/huijieqiao/QNAS/PubMed/baseline/%s", gsub("\\.gz", "", f))
-=======
-  xml<-sprintf("../../baseline/%s", gsub("\\.gz", "", f))
->>>>>>> 5c9450946e8e3fb23f77715ee0d4980ab30957b4
+
   
   print("loading xml")
   doc<-xmlParse(xml)
@@ -100,15 +90,11 @@ for (xxx in c(from:to)){
     }
     item<-xmlDoc(df[[i]])
     PMID<-getXmlValue(item, "//PMID", "numeric")
-<<<<<<< HEAD
     sql<-sprintf("SELECT * FROM Article_XML WHERE PMID=%d AND XML=%d", PMID, xxx)
     if (is_exist_db(sql)){
       next()
     }
     sql<-sprintf("INSERT INTO Article_XML (PMID, XML) VALUES (%d, %d)", PMID, xxx)
-=======
-    sql<-sprintf("UPDATE Article SET XMLID=%d WHERE PMID=%d", i, PMID)
->>>>>>> 5c9450946e8e3fb23f77715ee0d4980ab30957b4
     dbExecute(con, sql)
   }
 }
