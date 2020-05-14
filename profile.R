@@ -18,3 +18,5 @@ Article[local_temp, "year"]<-Article[local_temp, "DateCompletedYear"]
 
 Article_temp<-Article %>% filter(year==-9999)
 dim(Article_temp)
+
+head(Article %>% filter(year==-9999))
