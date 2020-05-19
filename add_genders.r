@@ -48,7 +48,6 @@ nameFun(name)
 nameFun<-function(name){
    items<-unlist(strsplit(trimws(name), " "))
    items<-items[nchar(items)==max(nchar(items))]
-   
    return(items[1])
 }
 for (name in x){
