@@ -102,7 +102,7 @@ all_IF[which(is.na(all_IF$Category)), "Category"]<-"UNKNOWN"
 
 unique(all_IF$Category)
 
-all_IF[which(is.na(all_IF$Journal.Impact.Factor==0)),]$Journal.Impact.Factor<-0
+#all_IF[which(is.na(all_IF$Journal.Impact.Factor)),]$Journal.Impact.Factor<-0
 
 dim(all_IF)
 colnames(all_IF)
@@ -128,3 +128,4 @@ ggplot(all_IF %>% filter(JCR.Abbreviated.Title %in% top_journals$JCR.Abbreviated
        aes(x=year, y=Journal.Impact.Factor, color=JCR.Abbreviated.Title, group=""))+geom_line()+geom_point()
 
 all_IF[which(all_IF$ISSN=="0028-0836"),]
+write.table(all_IF, "C:/Users/Huijie Qiao/Dropbox/Others/SCI-IF/IF_1997_2018.csv", row.names = F, sep=",")
