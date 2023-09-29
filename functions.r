@@ -10,7 +10,7 @@ readArticle<-function(category){
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
   articles
 }
-
+ 
 remove_chars <- function(x) {
   x <- gsub("[^ ]{1,}@[^ ]{1,}", " ",x)
   x <- gsub("@[^ ]{1,}", " ",x)
