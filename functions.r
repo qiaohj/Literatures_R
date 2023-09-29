@@ -1,30 +1,98 @@
-insertKeyword<-function(node, type){
-  attrs<-xmlAttrs(node)
-  text<-gsub("'", "’", xmlValue(node))
-  if ("UI" %in% names(attrs)){
-    UI<-attrs[which(names(attrs)=="UI")]
-  }else{
-    UI<-""
-  }
-  if ("MajorTopicYN" %in% names(attrs)){
-    MajorTopicYN<-attrs[which(names(attrs)=="MajorTopicYN")]
-  }else{
-    MajorTopicYN<-""
-  }
-  if (MajorTopicYN=="Y"){
-    MajorTopicYN<-1
-  }else{
-    MajorTopicYN<-0
-  }
-  sql<-sprintf("SELECT * FROM Keyword WHERE UI='%s'", UI)
-  if (!is_exist_db(sql)){
-    sql<-sprintf("INSERT INTO Keyword (UI, Name, Type) VALUES ('%s', '%s', '%s')", UI, text, type)
-    dbExecute(con, sql)
-  }
-  return(data.frame(UI=UI, MajorTopicYN=MajorTopicYN))
+readArticle<-function(category){
+  articles<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", category))
+  table(articles$type)
+  articles<-articles[type=="journal-article"]
+  articles$Year<-format(articles$published, "%Y")
+  #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
+  articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
+  #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
+  articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$created_date, "%Y")
+  #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
+  articles
 }
 
-
+remove_chars <- function(x) {
+  x <- gsub("[^ ]{1,}@[^ ]{1,}", " ",x)
+  x <- gsub("@[^ ]{1,}", " ",x)
+  x <- gsub("#[^ ]{1,}", " ",x)
+  x <- gsub("[^ ]{1,}://[^ ]{1,}", " ",x)
+  x
+}
+remove_symbols <- function(x) {
+  x <- gsub("<[^>]+>", " ",x)
+  x <- gsub("[`??????]"," ",x)
+  x <- gsub("[^A-Za-z']"," ",x)
+  x <- gsub("'{2,}"," ",x)
+  x <- gsub("' "," ",x)
+  x <- gsub(" '"," ",x)
+  x <- gsub("^'"," ",x)
+  x <- gsub("'$"," ",x)
+  x
+}
+format_words<-function(mydic, text){
+  text<-remove_symbols(text)
+  text<-remove_chars(text)
+  
+  corpusFeeds <- VCorpus(VectorSource(text))
+  corpusFeeds <- tm_map(corpusFeeds, removePunctuation) # remove punctuation
+  corpusFeeds <- tm_map(corpusFeeds, content_transformer(tolower))  # put in lower char
+  corpusFeeds <- tm_map(corpusFeeds, removeWords, stopwords("english")) # remove English stop words
+  corpusFeeds <- tm_map(corpusFeeds, stripWhitespace) # remove extra spaces
+  corpusFeeds <- tm_map(corpusFeeds, PlainTextDocument)
+  
+  dfForNGrams <- data.frame(text = sapply(corpusFeeds, as.character), stringsAsFactors = FALSE)
+  
+  uniGramToken <- NGramTokenizer(dfForNGrams, Weka_control(min = 1, max = 1))
+  temp<-stemDocument(uniGramToken)
+  past <- mydic$Past[which(mydic$Past %in% temp)]
+  inf1 <- mydic$Infinitive[which(mydic$Past %in% temp)]
+  ind <- match(temp, past)
+  ind <- ind[is.na(ind) == FALSE]
+  
+  ### Where are the past forms in temp?
+  position <- which(temp %in% past)
+  
+  temp[position] <- inf1[ind]
+  paste(temp, collapse = " ")
+  
+}
+get_Tokens<-function(mydic, text, type="Title"){
+  formatted_text<-format_words(mydic, text)
+  # unigram
+  
+  uniGramToken<-NGramTokenizer(formatted_text, Weka_control(min = 1, max = 1))
+  if (length(uniGramToken)<=3){
+    return(NULL)
+  }
+  unigram <- data.frame(table(uniGramToken), 
+                        N_token=1, doi=article_df[i]$doi,
+                        Year=article_df[i]$Year,
+                        container_title=article_df[i]$container_title)
+  colnames(unigram)[1:2] <- c("Word", "Frequency")
+  unigram <- arrange(unigram, desc(Frequency))
+  
+  # bigram
+  biGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 2, max = 2))
+  bigram <- data.frame(table(biGramToken), 
+                       N_token=2, doi=article_df[i]$doi,
+                       Year=article_df[i]$Year,
+                       container_title=article_df[i]$container_title)
+  colnames(bigram)[1:2] <- c("Word", "Frequency")
+  bigram <- arrange(bigram, desc(Frequency))
+  
+  # trigram
+  triGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 3, max = 3))
+  trigram <- data.frame(table(triGramToken), 
+                        N_token=3, doi=article_df[i]$doi,
+                        Year=article_df[i]$Year,
+                        container_title=article_df[i]$container_title)
+  colnames(trigram)[1:2] <- c("Word", "Frequency")
+  trigram <- arrange(trigram, desc(Frequency))
+  
+  tokens<-rbindlist(list(unigram, bigram, trigram))
+  tokens$type<-type
+  tokens
+}
 getXmlValue<-function(xml, path, type){
   v<-xpathApply(xml, path, xmlValue)
   if (type!="list"){
@@ -61,71 +129,30 @@ getXmlValue<-function(xml, path, type){
     }
   }
   if (type=="character"){
-    v<-fix_sql(v)
+    #v<-fix_sql(v)
   }
   return (v)
 }
-is_exist_db<-function(sql){
-  rs<-dbSendQuery(con, sql)
-  df_ui<-fetch(rs, n=-1)
-  dbClearResult(rs)
-  if (nrow(df_ui)==0){
-    return(F)
-  }else{
-    return(T)
-  }
-}
-fix_sql<-function(str){
-  str<-gsub("'", "’", str)
-  str<-gsub("\\\\", "", str)
-  return (str)
-}
-killDbConnections <- function () {
-  
-  all_cons <- dbListConnections(MySQL())
-  
-  print(all_cons)
-  
-  for(con in all_cons)
-    +  dbDisconnect(con)
-  
-  print(paste(length(all_cons), " connections killed."))
-  
-}
 
-summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE) {
-  library(plyr)
-  
-  # New version of length which can handle NA's: if na.rm==T, don't count them
-  length2 <- function (x, na.rm=FALSE) {
-    if (na.rm) sum(!is.na(x))
-    else       length(x)
+
+getKeyword<-function(node, type){
+  attrs<-xmlAttrs(node)
+  text<-gsub("'", "’", xmlValue(node))
+  if ("UI" %in% names(attrs)){
+    UI<-attrs[which(names(attrs)=="UI")]
+  }else{
+    UI<-""
+  }
+  if ("MajorTopicYN" %in% names(attrs)){
+    MajorTopicYN<-attrs[which(names(attrs)=="MajorTopicYN")]
+  }else{
+    MajorTopicYN<-""
+  }
+  if (MajorTopicYN=="Y"){
+    MajorTopicYN<-1
+  }else{
+    MajorTopicYN<-0
   }
   
-  # This does the summary. For each group's data frame, return a vector with
-  # N, mean, and sd
-  datac <- ddply(data, groupvars, .drop=.drop,
-                 .fun = function(xx, col) {
-                   c(N    = length2(xx[[col]], na.rm=na.rm),
-                     mean = mean   (xx[[col]], na.rm=na.rm),
-                     sd   = sd     (xx[[col]], na.rm=na.rm),
-                     median = median (xx[[col]], na.rm=na.rm)
-                   )
-                 },
-                 measurevar
-  )
-  
-  # Rename the "mean" column    
-  #datac <- rename(datac, c("mean" = measurevar))
-  
-  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
-  
-  # Confidence interval multiplier for standard error
-  # Calculate t-statistic for confidence interval: 
-  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
-  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
-  datac$ci <- datac$se * ciMult
-  
-  return(datac)
+  return(data.table(UI=UI, MajorTopicYN=MajorTopicYN, text=text, type=type))
 }
