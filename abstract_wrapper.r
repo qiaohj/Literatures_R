@@ -11,7 +11,7 @@ library(dplyr)
 library(rvest)
 library(splitstackshape)
 rm(list=ls())
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 
 if (F){
   x <- read_html("http://www.englishpage.com/irregularverbs/irregularverbs.html")

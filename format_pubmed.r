@@ -221,10 +221,10 @@ extract_pubmed<-function(xml){
 library(R.utils)
 library(XML)
 library(data.table)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 #xx<-extract_pubmed("/media/huijieqiao/WD22T_old/pubmed23n1167.xml")
-#source_folder<-"/media/huijieqiao/WD22T1/pubmed/RAW/baseline"
-source_folder<-"/media/huijieqiao/WD22T1/pubmed/RAW/updatefiles"
+#source_folder<-"/media/huijieqiao/WD22T_11/literatures/RAW/baseline"
+source_folder<-"/media/huijieqiao/WD22T_11/literatures/RAW/updatefiles"
 zips<-list.files(source_folder, pattern = "\\.gz")
 f<-zips[1]
 for (i in c(1:length(zips))){

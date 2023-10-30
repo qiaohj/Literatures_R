@@ -1,6 +1,6 @@
 library(data.table)
 library(ggplot2)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 category<-"Ecology"
 article_df<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", category))
 article_df$Year<-format(article_df$published, "%Y")

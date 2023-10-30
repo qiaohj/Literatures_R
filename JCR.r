@@ -1,5 +1,5 @@
 library(data.table)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 journals<-fread("../Data/JCR/wos-core_SCIE 2023-August-21.csv")
 year<-2023
 unique(journals$Languages)

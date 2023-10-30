@@ -1,6 +1,7 @@
 library(data.table)
 library(ggplot2)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 category<-"WeedScience"
 authors_country<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/authors_country_iso.rda", category))
 articles<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", category))

@@ -1,11 +1,11 @@
 library(data.table)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 rm(list=ls())
 if (F){
   library(R.utils)
   library(rjson)
   library(data.table)
-  setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+  setwd("/media/huijieqiao/WD22T_11/literatures/Script")
   j=1
   journals<-fread("../Data/WeedScience/journals_weed_science.csv")
   target<-sprintf("../Data/CrossRef_By_Category/%s", "WeedScience")

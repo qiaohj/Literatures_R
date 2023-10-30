@@ -1,5 +1,5 @@
 library(data.table)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 setDTthreads(20)
 reference_list<-readRDS("../Data/CrossRef_Full/references.rda")
 

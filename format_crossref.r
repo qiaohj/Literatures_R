@@ -1,7 +1,7 @@
 library(R.utils)
 library(rjson)
 library(data.table)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 
 
 getValue<-function(node, key, type="character"){
@@ -202,7 +202,7 @@ for (i in c(1:length(zips))){
 }
 if (F){
   library(data.table)
-  setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+  setwd("/media/huijieqiao/WD22T_11/literatures/Script")
   files<-list.files("../Data/datatable_crossref", pattern="\\.rda")
   article_list<-list()
   journal_issn<-list()
@@ -239,7 +239,7 @@ if (F){
 }
 if (F){
   library(data.table)
-  setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+  setwd("/media/huijieqiao/WD22T_11/literatures/Script")
   article_df<-readRDS("../Data/CrossRef_Full/articles.rda")
   journal_df<-readRDS("../Data/CrossRef_Full/journals.rda")
   article_subject_df<-readRDS("../Data/CrossRef_Full/article_subject.rda")
@@ -286,7 +286,7 @@ if (F){
   library(R.utils)
   library(rjson)
   library(data.table)
-  setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+  setwd("/media/huijieqiao/WD22T_11/literatures/Script")
   
   jcr_journals<-readRDS("../Data/JCR/journals.rda")
   Categories<-unique(jcr_journals$Category)

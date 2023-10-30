@@ -1,6 +1,6 @@
 library(data.table)
 setDTthreads(20)
-setwd("/media/huijieqiao/WD22T1/pubmed/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 categories<-list.dirs("../Data/CrossRef_By_Category", full.names = F)
 categories<-categories[sample(length(categories), length(categories))]
 for (category in categories){
