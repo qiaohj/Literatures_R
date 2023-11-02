@@ -29,7 +29,7 @@ if (F){
   saveRDS(dic, "../Data/word_wrapper/irregular.verbs.rda")
 }
 source("functions.r")
-category<-"WeedScience"
+category<-"Biodiversity Conservation"
 article_df<-readArticle(category)
 table(article_df$type)
 

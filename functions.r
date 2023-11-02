@@ -156,3 +156,5 @@ getKeyword<-function(node, type){
   
   return(data.table(UI=UI, MajorTopicYN=MajorTopicYN, text=text, type=type))
 }
+
+colors<-c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
