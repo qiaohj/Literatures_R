@@ -8,9 +8,12 @@ journals<-list()
 tokens<-list()
 for (cate in categories){
   print(cate)
-  item<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", cate))
+  item<-readArticle(cate)
   journal<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/journals.rda", cate))
-  token<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", cate))
+  if (cate!="Biodiversity Conservation"){
+    token<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", cate))  
+  }
+  
   #item$Categorie<-cate
   item$File<-NULL
   journal$File<-NULL
@@ -20,9 +23,6 @@ for (cate in categories){
 articles<-rbindlist(articles)
 journals<-rbindlist(journals)
 tokens<-rbindlist(tokens)
-articles$Year<-format(articles$published, "%Y")
-articles<-articles[!is.na(Year)]
-articles<-articles[type=="journal-article"]
 articles<-unique(articles)
 
 N_articles<-journals[, .(N=.N), by=list(article_DOI)]
@@ -53,6 +53,8 @@ journal_issn[ISSN %in% c("0378-1909", "1573-5133")]$Title<-"ENVIRONMENTAL BIOLOG
 journal_issn[ISSN %in% c("0367-2530")]$Title<-"FLORA"
 journal_issn[ISSN %in% c("1578-665X", "2014-928X")]$Title<-"ANIMAL BIODIVERSITY AND CONSERVATION"
 journal_issn[ISSN %in% c("0075-6458", "2071-0771")]$Title<-"KOEDOE"
+journal_issn[ISSN %in% c("1936-0584", "1936-0592")]$Title<-"ECOHYDROLOGY"
+journal_issn[ISSN %in% c("0370-047X")]$Title<-"PROCEEDINGS OF LINNEAN SOCIETY OF NEW SOUTH WALES"
 
 
 N_journal_issn_new<-unique(journal_issn[, c("Title", "ISSN")])[, .(N=.N), by=list(ISSN)]
@@ -95,8 +97,10 @@ samples<-rbindlist(samples)
 samples$Year<-as.numeric(samples$Year)
 saveRDS(samples, "../Data/Sample_Ecology_Biodiversity/samples.rda")
 article_new$Year<-as.numeric(article_new$Year)
+article_new$ISSN_RAW<-NULL
 article_new<-article_new[!(Title=="PROCEEDINGS OF THE ROYAL SOCIETY B: BIOLOGICAL SCIENCES" &
                             Year==1948)]
+article_new<-unique(article_new)
 saveRDS(article_new, "../Data/Sample_Ecology_Biodiversity/articles.rda")
 
 if (F){
@@ -141,6 +145,7 @@ if (F){
   N_articles_journal[N_article>1000]
   unique(N_articles_journal[Current_Age>100]$Title)
   range(N_articles_journal$Current_Age)
+  N_articles_journal[]
   max(N_articles_journal$N_article)
   N_articles_journal_sub<-N_articles_journal[Year>=1950]
   N_articles_journal_sub<-N_articles_journal[Year<=2022]
@@ -151,5 +156,7 @@ if (F){
     geom_line(data=N_articles_journal_sub[Title %in% target_journales[2]], 
               aes(x=Age, y=N_article, group=Title, color=Title))
   
-  N_articles_journal[Title=="PROCEEDINGS OF THE ROYAL SOCIETY B: BIOLOGICAL SCIENCES"]
+  N_articles_journal[Title=="MARINE ECOLOGY PROGRESS SERIES"]
+  article_new[Title=="MARINE ECOLOGY PROGRESS SERIES" & Year==2007]
+  articles[doi=="10.3354/meps001001"]
 }

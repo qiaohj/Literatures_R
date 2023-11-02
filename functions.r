@@ -1,12 +1,13 @@
 readArticle<-function(category){
   articles<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", category))
-  table(articles$type)
+  table(articles$language)
   articles<-articles[type=="journal-article"]
+  articles<-articles[language=="en"]
   articles$Year<-format(articles$published, "%Y")
-  #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
+  
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
-  articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$created_date, "%Y")
+  #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$created_date, "%Y")
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
   articles
 }
