@@ -23,12 +23,8 @@ getValue<-function(node, key, type="character"){
       if (type=="datetime_array"){
         v<-v[[1]] 
         year<-v[1]
-        month<-v[2]
-        if (length(v)==3){
-          day<-v[3]
-        }else{
-          day<-1
-        }
+        month<-ifelse(is.na(v[2]), 1, v[2])
+        day<-ifelse(is.na(v[3]), 1, v[3])
         v<-as.Date(sprintf("%d-%d-%d", year, month, day),
                    format="%Y-%m-%d")
       }
@@ -59,8 +55,9 @@ getValue<-function(node, key, type="character"){
 source_folder<-"../RAW/April 2023 Public Data File from Crossref/"
 
 zips<-list.files(source_folder, pattern = "\\.gz")
-zips<-zips[sample(length(zips), length(zips))]
-i=6363
+#zips<-zips[sample(length(zips), length(zips))]
+i=28573
+match("9883.json.gz", zips)
 for (i in c(1:length(zips))){
   f<-zips[i]
   
