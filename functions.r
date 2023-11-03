@@ -64,37 +64,48 @@ format_words<-function(mydic, text){
 get_Tokens<-function(mydic, text, type="Title"){
   formatted_text<-format_words(mydic, text)
   # unigram
-  
   uniGramToken<-NGramTokenizer(formatted_text, Weka_control(min = 1, max = 1))
-  if (length(uniGramToken)<=3){
-    return(NULL)
+  if (length(uniGramToken)>=1){
+    unigram <- data.frame(table(uniGramToken), 
+                          N_token=1, doi=article_df[i]$doi,
+                          Year=article_df[i]$Year,
+                          container_title=article_df[i]$container_title)
+    colnames(unigram)[1:2] <- c("Word", "Frequency")
+    unigram <- arrange(unigram, desc(Frequency))
+  }else{
+    return (NULL)
   }
-  unigram <- data.frame(table(uniGramToken), 
-                        N_token=1, doi=article_df[i]$doi,
-                        Year=article_df[i]$Year,
-                        container_title=article_df[i]$container_title)
-  colnames(unigram)[1:2] <- c("Word", "Frequency")
-  unigram <- arrange(unigram, desc(Frequency))
   
-  # bigram
-  biGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 2, max = 2))
-  bigram <- data.frame(table(biGramToken), 
-                       N_token=2, doi=article_df[i]$doi,
-                       Year=article_df[i]$Year,
-                       container_title=article_df[i]$container_title)
-  colnames(bigram)[1:2] <- c("Word", "Frequency")
-  bigram <- arrange(bigram, desc(Frequency))
+  if (length(uniGramToken)>=2){
+    # bigram
+    biGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 2, max = 2))
+    bigram <- data.frame(table(biGramToken), 
+                         N_token=2, doi=article_df[i]$doi,
+                         Year=article_df[i]$Year,
+                         container_title=article_df[i]$container_title)
+    colnames(bigram)[1:2] <- c("Word", "Frequency")
+    bigram <- arrange(bigram, desc(Frequency))
+  }else{
+    tokens<-unigram
+    bigram<-NULL
+  }
   
-  # trigram
-  triGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 3, max = 3))
-  trigram <- data.frame(table(triGramToken), 
-                        N_token=3, doi=article_df[i]$doi,
-                        Year=article_df[i]$Year,
-                        container_title=article_df[i]$container_title)
-  colnames(trigram)[1:2] <- c("Word", "Frequency")
-  trigram <- arrange(trigram, desc(Frequency))
+  if (length(uniGramToken)>=3){
+    # trigram
+    triGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 3, max = 3))
+    trigram <- data.frame(table(triGramToken), 
+                          N_token=3, doi=article_df[i]$doi,
+                          Year=article_df[i]$Year,
+                          container_title=article_df[i]$container_title)
+    colnames(trigram)[1:2] <- c("Word", "Frequency")
+    trigram <- arrange(trigram, desc(Frequency))
+    tokens<-rbindlist(list(unigram, bigram, trigram))
+  }else{
+    tokens<-rbindlist(list(unigram, bigram))
+    trigram<-NULL
+  }
   
-  tokens<-rbindlist(list(unigram, bigram, trigram))
+  
   tokens$type<-type
   tokens
 }

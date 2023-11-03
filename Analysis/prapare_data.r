@@ -10,10 +10,8 @@ for (cate in categories){
   print(cate)
   item<-readArticle(cate)
   journal<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/journals.rda", cate))
-  if (cate!="Biodiversity Conservation"){
-    token<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", cate))  
-  }
-  
+  token<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", cate))  
+  tokens[[length(tokens)+1]]<-token
   #item$Categorie<-cate
   item$File<-NULL
   journal$File<-NULL
@@ -103,6 +101,10 @@ article_new<-article_new[!(Title=="PROCEEDINGS OF THE ROYAL SOCIETY B: BIOLOGICA
 article_new<-unique(article_new)
 saveRDS(article_new, "../Data/Sample_Ecology_Biodiversity/articles.rda")
 
+tokens_new<-tokens[doi %in% article_new$doi]
+saveRDS(tokens_new, "../Data/Sample_Ecology_Biodiversity/tokens_title.rda")
+
+article_new[!(doi %in% tokens_new$doi)]
 if (F){
   N_articles<-article_new[, .(N_article=length(unique(doi)),
                               N_journal=length(unique(Title))
