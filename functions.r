@@ -1,10 +1,11 @@
-readArticle<-function(category){
+readArticle<-function(category, all=F){
   articles<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/articles.rda", category))
-  table(articles$language)
-  articles<-articles[type=="journal-article"]
-  articles<-articles[language=="en"]
+  #table(articles$language)
+  if (all==F){
+    articles<-articles[type=="journal-article"]
+    articles<-articles[language=="en"]
+  }
   articles$Year<-format(articles$published, "%Y")
-  
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_online, "%Y")
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_others, "%Y")
@@ -15,7 +16,7 @@ readArticle<-function(category){
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
   articles
 }
- 
+
 remove_chars <- function(x) {
   x <- gsub("[^ ]{1,}@[^ ]{1,}", " ",x)
   x <- gsub("@[^ ]{1,}", " ",x)

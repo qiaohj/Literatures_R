@@ -29,7 +29,7 @@ if (F){
   saveRDS(dic, "../Data/word_wrapper/irregular.verbs.rda")
 }
 source("functions.r")
-category<-"Biodiversity Conservation"
+category<-"Ecology"
 article_df<-readArticle(category)
 table(article_df$type)
 
@@ -89,7 +89,7 @@ token_abstract_df<-rbindlist(token_abstract_list)
 saveRDS(token_title_df, sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", category))
 saveRDS(token_abstract_df, sprintf("../Data/CrossRef_By_Category/%s/token_abstract.rda", category))
 
-get_Tokens(mydic, "a and b", "title")
+get_Tokens(mydic, "a xxx b", "title")
 
 token_title_df[Word=="genet"]$Word<-"gene"
 dim(token_title_df)
