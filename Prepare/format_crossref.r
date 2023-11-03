@@ -249,7 +249,7 @@ if (F){
   
   journals<-unique(journal_df[, c("Title", "ISSN")])
   journals<-journals[!is.na(ISSN)]
-  journal$ISSN<-as.character(journal$ISSN)
+  journals$ISSN<-as.character(journals$ISSN)
   journals<-journals[sample(nrow(journals), nrow(journals))]
   for (i in c(1:nrow(journals))){
     
