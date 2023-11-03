@@ -20,7 +20,8 @@ for (cate in categories){
 }
 articles<-rbindlist(articles)
 journals<-rbindlist(journals)
-tokens<-rbindlist(tokens)
+tokens<-rbindlist(tokens, fill=T)
+tokens<-unique(tokens)
 articles<-unique(articles)
 
 N_articles<-journals[, .(N=.N), by=list(article_DOI)]
@@ -101,7 +102,7 @@ article_new<-article_new[!(Title=="PROCEEDINGS OF THE ROYAL SOCIETY B: BIOLOGICA
 article_new<-unique(article_new)
 saveRDS(article_new, "../Data/Sample_Ecology_Biodiversity/articles.rda")
 
-tokens_new<-tokens[doi %in% article_new$doi]
+tokens_new<-merge(tokens, article_new, by="doi")
 saveRDS(tokens_new, "../Data/Sample_Ecology_Biodiversity/tokens_title.rda")
 
 article_new[!(doi %in% tokens_new$doi)]
@@ -161,4 +162,10 @@ if (F){
   N_articles_journal[Title=="MARINE ECOLOGY PROGRESS SERIES"]
   article_new[Title=="MARINE ECOLOGY PROGRESS SERIES" & Year==2007]
   articles[doi=="10.3354/meps001001"]
+  
+  N_tokens<-tokens_new[, .(Frequency=sum(Frequency),
+                           N=.N), by=list(Word, N_token)]
+  setorderv(N_tokens, "N", -1)
+  top100_tokens = N_tokens[,head(.SD, 100), by = c("N_token")]
+  table(top100_tokens$Word)
 }

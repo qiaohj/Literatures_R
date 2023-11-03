@@ -18,6 +18,7 @@ readArticle<-function(category, all=F){
 }
 
 remove_chars <- function(x) {
+  x <- gsub("<.*?>", "", x)
   x <- gsub("[^ ]{1,}@[^ ]{1,}", " ",x)
   x <- gsub("@[^ ]{1,}", " ",x)
   x <- gsub("#[^ ]{1,}", " ",x)
@@ -25,6 +26,7 @@ remove_chars <- function(x) {
   x
 }
 remove_symbols <- function(x) {
+  x <- gsub("&[^&]*;", " ", x)
   x <- gsub("<[^>]+>", " ",x)
   x <- gsub("[`??????]"," ",x)
   x <- gsub("[^A-Za-z']"," ",x)
@@ -62,13 +64,13 @@ format_words<-function(mydic, text){
   paste(temp, collapse = " ")
   
 }
-get_Tokens<-function(mydic, text, type="Title"){
+get_Tokens<-function(mydic, text, type="Title", doi=doi){
   formatted_text<-format_words(mydic, text)
   # unigram
   uniGramToken<-NGramTokenizer(formatted_text, Weka_control(min = 1, max = 1))
   if (length(uniGramToken)>=1){
     unigram <- data.frame(table(uniGramToken), 
-                          N_token=1, doi=article_df[i]$doi)
+                          N_token=1, doi=doi)
     colnames(unigram)[1:2] <- c("Word", "Frequency")
     unigram <- arrange(unigram, desc(Frequency))
   }else{
@@ -79,7 +81,7 @@ get_Tokens<-function(mydic, text, type="Title"){
     # bigram
     biGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 2, max = 2))
     bigram <- data.frame(table(biGramToken), 
-                         N_token=2, doi=article_df[i]$doi)
+                         N_token=2, doi=doi)
     colnames(bigram)[1:2] <- c("Word", "Frequency")
     bigram <- arrange(bigram, desc(Frequency))
   }else{
@@ -91,7 +93,7 @@ get_Tokens<-function(mydic, text, type="Title"){
     # trigram
     triGramToken <- NGramTokenizer(formatted_text, Weka_control(min = 3, max = 3))
     trigram <- data.frame(table(triGramToken), 
-                          N_token=3, doi=article_df[i]$doi)
+                          N_token=3, doi=doi)
     colnames(trigram)[1:2] <- c("Word", "Frequency")
     trigram <- arrange(trigram, desc(Frequency))
     tokens<-rbindlist(list(unigram, bigram, trigram))
