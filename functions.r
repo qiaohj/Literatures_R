@@ -3,12 +3,12 @@ readArticle<-function(category, all=F){
   #table(articles$language)
   if (all==F){
     articles<-articles[type=="journal-article"]
-    articles<-articles[language=="en"]
+    #articles<-articles[language=="en" | is.na(language)]
   }
   articles$Year<-format(articles$published, "%Y")
-  articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
+  #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_online, "%Y")
-  articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_others, "%Y")
+  #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_others, "%Y")
   
   
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
