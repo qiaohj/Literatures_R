@@ -9,14 +9,22 @@ cate<-categories[1]
 articles<-list()
 journals<-list()
 tokens<-list()
+tokens_abstract<-list()
 authors_countries<-list()
+authors<-list()
+article_subject_splittedes<-list()
+article_subjects<-list()
 for (cate in categories){
   print(cate)
   item<-readArticle(cate)
   journal<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/journals.rda", cate))
   token<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", cate)) 
+  token_abstract<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/token_abstract.rda", cate)) 
+  article_subject_splitted<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/article_subject_splitted.rda", cate)) 
+  article_subject<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/article_subject.rda", cate)) 
+  author<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/authors.rda", cate)) 
   authors_country<-readRDS(sprintf("../Data/CrossRef_By_Category/%s/authors_country_iso.rda", cate)) 
-  tokens[[length(tokens)+1]]<-token
+  
   #item$Categorie<-cate
   #item$File<-NULL
   journal$File<-NULL
@@ -24,16 +32,28 @@ for (cate in categories){
   
   articles[[length(articles)+1]]<-item
   journals[[length(journals)+1]]<-journal
+  authors[[length(authors)+1]]<-author
+  article_subject_splittedes[[length(article_subject_splittedes)+1]]<-article_subject_splitted
+  article_subjects[[length(article_subjects)+1]]<-article_subject
   authors_countries[[length(authors_countries)+1]]<-authors_country
+  tokens[[length(tokens)+1]]<-token
+  tokens_abstract[[length(tokens_abstract)+1]]<-token_abstract
+  
 }
 articles<-rbindlist(articles)
 journals<-rbindlist(journals)
-tokens<-rbindlist(tokens, fill=T)
+tokens<-rbindlist(tokens)
+tokens_abstract<-rbindlist(tokens_abstract)
+authors_countries<-rbindlist(authors_countries)
+article_subject_splittedes<-rbindlist(article_subject_splittedes)
+article_subjects<-rbindlist(article_subjects)
+authors<-rbindlist(authors)
+
 tokens$Year<-NULL
 tokens$container_title<-NULL
 tokens$type<-NULL
 tokens<-unique(tokens)
-authors_countries<-rbindlist(authors_countries)
+
 
 articles<-unique(articles)
 
@@ -171,6 +191,7 @@ if (F){
   
   unique(N_articles_journal[N_article>1000]$Title)
   N_articles_journal<-N_articles_journal[!is.na(Year)]
+  fwrite(N_articles_journal, "../Data/N_articles_journal.csv")
   #N_articles_journal<-N_articles_journal[Title != "ENVIRONMENTAL CONSERVATION"]
   N_articles_journal[Title=="APPLIED ECOLOGY AND ENVIRONMENTAL RESEARCH"]
   N_articles_journal$Recent_Age<-abs(N_articles_journal$Year - 2023)
@@ -203,6 +224,10 @@ if (F){
   article_new[Title=="MARINE ECOLOGY PROGRESS SERIES" & Year==2007]
   articles[doi=="10.3354/meps001001"]
   
+  dois<-unique(article_new[Year>=2000]$doi)
+  length(dois)
+  length(dois[dois %in% unique(tokens_abstract$doi)])
+  length(dois[dois %in% unique(authors_countries$article_DOI)])
   removed<-c("volum issu cover", "cover front matter", "issu cover front",
              "cover back matter", "issu cover back", "hard cover isbn",
              "illustr hard cover", "new south wale", "orx volum issu",
