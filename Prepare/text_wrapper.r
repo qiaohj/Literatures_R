@@ -29,8 +29,10 @@ if (F){
   saveRDS(dic, "../Data/word_wrapper/irregular.verbs.rda")
 }
 source("functions.r")
-category<-"Ecology"
+category<-"missing_journals_ecology_biodiversity"
+#category<-"Ecology"
 #category<-"Biodiversity Conservation"
+
 article_df<-readArticle(category, all=T)
 table(article_df$type)
 

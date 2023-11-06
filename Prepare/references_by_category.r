@@ -5,7 +5,7 @@ reference_list<-readRDS("../Data/CrossRef_Full/references.rda")
 
 categories<-list.dirs("../Data/CrossRef_By_Category", full.names = F)
 categories<-categories[sample(length(categories), length(categories))]
-category<-"WeedScience"
+category<-"missing_journals_ecology_biodiversity"
 for (category in categories){
   print(category)
   target<-sprintf("../Data/CrossRef_By_Category/%s/article_references.rda", category)
