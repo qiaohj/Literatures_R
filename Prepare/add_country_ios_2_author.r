@@ -7,7 +7,7 @@ if (F){
   countries<-unique(countries)
   fwrite(countries, "../Data/country_iso.csv")
 }
-string<-authors[sample(nrow(authors), 100)]$affiliation
+#string<-authors[sample(nrow(authors), 100)]$affiliation
 getCountry<-function(string){
   string_item<-string[grep(countries$country1, string)]
 }
@@ -20,7 +20,7 @@ us_states<-fread("../Data/states_us.csv", fill=T)
 us_states$states<-toupper(us_states$states)
 categories<-list.dirs("../Data/CrossRef_By_Category", full.names = F)
 categories<-categories[sample(length(categories), length(categories))]
-category<-"WeedScience"
+category<-"missing_journals_ecology_biodiversity"
 for (category in categories){
   print(category)
   target<-sprintf("../Data/CrossRef_By_Category/%s/authors_country_iso.rda", category)

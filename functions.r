@@ -9,7 +9,7 @@ readArticle<-function(category, all=F){
   #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_print, "%Y")
   articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_online, "%Y")
   #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$published_others, "%Y")
-  
+  articles$Year<-as.numeric(articles$Year)
   
   #articles[container_title=="Journal of Weed Science and Technology" & is.na(Year)]
   #articles[is.na(Year)]$Year<-format(articles[is.na(Year)]$created_date, "%Y")

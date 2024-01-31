@@ -3,6 +3,7 @@ setDTthreads(20)
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 categories<-list.dirs("../Data/CrossRef_By_Category", full.names = F)
 categories<-categories[sample(length(categories), length(categories))]
+categories<-"missing_journals_ecology_biodiversity"
 for (category in categories){
   print(category)
   target<-sprintf("../Data/CrossRef_By_Category/%s/article_subject_splitted.rda", category)
