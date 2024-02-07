@@ -16,7 +16,7 @@ template<-"../Weed/mapspam/TIFF/spam2010V2r0_global_%s_%s_%s.tif"
 #*_Y_*		yield
 #*_V_agg_*	value of production, aggregated to all crops, food and non-food (see below)
 
-variable<-"Y"
+variable<-"P"
 
 #t: Technologies
 #******************
@@ -61,27 +61,46 @@ results<-rbindlist(results)
 hist(results[crop=="WHEA"]$v)
 
 
+crop_iso_sum<-results[, .(iso_sum_v=sum(v)), by=c("iso3", "country")]
 
-colnames(crops)<-c("ID", "crop.name", "crop", "type")
-crops$ID<-NULL
-crops$crop<-toupper(crops$crop)
-result_full<-merge(merge(results, crop_iso_sum, by="iso3"), crop_crop_sum, by="crop")
-result_full<-merge(result_full, crops, by="crop")
-result_full<-result_full[v>0]
-crop_crop_sum<-result_full[, .(crop_sum_v=sum(v)), by=c("crop", "crop.name")]
+crop_crop_sum<-results[, .(crop_sum_v=sum(v),
+                           area_sum_v=sum(area)), by=c("crop")]
 setorderv(crop_crop_sum, "crop_sum_v", -1)
-crop_iso_sum<-result_full[, .(iso_sum_v=sum(v)), by=c("iso3", "country")]
+setorderv(crop_crop_sum, "area_sum_v", -1)
+
+
+result_full<-merge(merge(results, crop_iso_sum, by=c("iso3", "country")), crop_crop_sum, by="crop")
+result_full<-merge(result_full, crops[, c("crop", "crop.name")], by="crop")
+result_full<-result_full[v>0]
+
+
+crop_iso_sum<-result_full[, .(iso_sum_v=sum(v),
+                              iso_sum_area=sum(area)), 
+                          by=c("iso3", "country")]
 setorderv(crop_iso_sum, "iso_sum_v", -1)
 crop_iso_sum[, cum.iso_sum_v := cumsum(iso_sum_v)]
 sum_v<-sum(crop_iso_sum$iso_sum_v)
 crop_iso_sum$per<-crop_iso_sum$iso_sum_v/sum_v * 100
 crop_iso_sum$cum.per<-crop_iso_sum$cum.iso_sum_v/sum_v * 100
-
+crop_crop_sum<-result_full[, .(crop_sum_v=sum(v),
+                               area_sum_v=sum(area)), by=c("crop", "crop.name")]
 
 
 saveRDS(crop_iso_sum, "../Weed/Data/crop_iso_sum.rda")
-saveRDS(crop_crop_sum, "../Weed/Data/crop_crop_sum.rda")
+
 saveRDS(result_full, "../Weed/Data/crop_iso_details.rda")
 
+crop_crop_sum$token<-""
+for (i in c(1:nrow(crop_crop_sum))){
+  name<-crop_crop_sum[i]$crop.name
+  tokens<-get_Tokens(mydic, name, "", "")
+  if (nrow(tokens)>1){
+    crop_crop_sum[i]$token<-tokens[3]$Word
+  }else{
+    crop_crop_sum[i]$token<-tokens[1]$Word
+  }
+}
 
+saveRDS(crop_crop_sum, "../Weed/Data/crop_crop_sum.rda")
 
+crop_crop_sum$crop.name

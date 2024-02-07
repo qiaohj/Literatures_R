@@ -10,6 +10,7 @@ library(gridExtra)
 library(dplyr)
 library(rvest)
 library(splitstackshape)
+
 rm(list=ls())
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 
@@ -29,10 +30,10 @@ if (F){
   saveRDS(dic, "../Data/word_wrapper/irregular.verbs.rda")
 }
 source("functions.r")
-category<-"missing_journals_ecology_biodiversity"
+#category<-"missing_journals_ecology_biodiversity"
 #category<-"Ecology"
 #category<-"Biodiversity Conservation"
-
+category<-"WeedScience"
 article_df<-readArticle(category, all=T)
 table(article_df$type)
 
@@ -97,6 +98,7 @@ for (i in c(1:nrow(article_df))){
     grid.arrange(plotBiGram, plotTriGram, ncol=2)
   }
 }
+
 token_title_df<-rbindlist(token_title_list)
 token_abstract_df<-rbindlist(token_abstract_list)
 saveRDS(token_title_df, sprintf("../Data/CrossRef_By_Category/%s/token_title.rda", category))
