@@ -28,3 +28,6 @@ journal_df<-rbindlist(journal_list)
 journal_df[Title=="METHODS IN ECOLOGY AND EVOLUTION"]
 saveRDS(journal_df, "../Data/JCR/journals.rda")
 
+journal_df<-readRDS("../Data/JCR/journals.rda")
+table(journal_df$Category)
+length(unique(journal_df$Category))
