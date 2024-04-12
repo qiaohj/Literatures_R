@@ -1,15 +1,66 @@
 library(ggplot2)
 library(data.table)
 library(stringr)
+library(ggrepel)
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 source("functions.r")
 group<-"Mammals"
 
 groups<-c("Amphibians", "Birds", "Mammals", "Odonata", "Reptiles")
+
+duplicated_references<-readRDS("../Data_IUCN_References/References/duplicated_reference.rda")
+
+configs<-list("Amphibians"=data.table(width=c(8, 12, 15, 15, 10, 10, 10), 
+                                      height=c(5, 7, 7, 7, 8, 8, 8), 
+                                      figure=c("mean_by_order",
+                                               "mean_by_family",
+                                               "mean_by_order_realm",
+                                               "mean_by_order_realm_single",
+                                               "species_vs_order",
+                                               "species_vs_family",
+                                               "mass_vs_order")),
+              "Birds"=data.table(width=c(8, 15, 15, 15, 10, 10, 10), 
+                                 height=c(5, 6, 7, 7, 8, 8, 8), 
+                                 figure=c("mean_by_order",
+                                          "mean_by_family",
+                                          "mean_by_order_realm",
+                                          "mean_by_order_realm_single",
+                                          "species_vs_order",
+                                          "species_vs_family",
+                                          "mass_vs_order")),
+              "Mammals"=data.table(width=c(8, 12, 15, 15, 10, 10, 10), 
+                                   height=c(5, 7, 7, 7, 8, 8, 8), 
+                                   figure=c("mean_by_order",
+                                            "mean_by_family",
+                                            "mean_by_order_realm",
+                                            "mean_by_order_realm_single",
+                                            "species_vs_order",
+                                            "species_vs_family",
+                                            "mass_vs_order")),
+              "Odonata"=data.table(width=c(8, 12, 15, 15, 10, 10, 10), 
+                                   height=c(5, 7, 7, 7, 8, 8, 8), 
+                                   figure=c("mean_by_order",
+                                            "mean_by_family",
+                                            "mean_by_order_realm",
+                                            "mean_by_order_realm_single",
+                                            "species_vs_order",
+                                            "species_vs_family",
+                                            "mass_vs_order")),
+              "Reptiles"=data.table(width=c(8, 12, 15, 15, 10, 10, 10), 
+                                    height=c(5, 7, 7, 7, 8, 8, 8), 
+                                    figure=c("mean_by_order",
+                                             "mean_by_family",
+                                             "mean_by_order_realm",
+                                             "mean_by_order_realm_single",
+                                             "species_vs_order",
+                                             "species_vs_family",
+                                             "mass_vs_order")))
+group<-"Birds"
 for (group in groups){
-  sp_list<-readRDS(sprintf("../Data/IUCN_PDF/Result/assessments_ref_%s.rda", group))
-  references_df<-readRDS(sprintf("../Data/IUCN_PDF/Result/references_%s.rda", group))
-  
+  print(group)
+  config<-configs[[group]]
+  references_df<-readRDS(sprintf("../Data_IUCN_References/References/references_%s_cleaned.rda", group))
+  references_df<-references_df[is_IUCN==FALSE]
   references_df[grep("IUCN", reference)]
   references_df$label<-"Before 1990"
   references_df[between(reference_year, 1991, 2000)]$label<-"1991 to 2000"
@@ -17,14 +68,24 @@ for (group in groups){
   references_df[reference_year>=2011]$label<-"After 2010"
   references_df$label<-factor(references_df$label, 
                               levels=c("After 2010", "2001 to 2010", "1991 to 2000", "Before 1990"))
+  references_df<-merge(references_df, 
+                         duplicated_references[, c("group", "reference_clean")], 
+                         by.x="reference_clean",
+                         by.y="reference_clean",
+                         all.x=T, all.y=F)
+  max_group<-max(references_df$group, na.rm = T)
+  references_df[is.na(group)]$group<-c((max_group+1):(max_group+nrow(references_df[is.na(group)])))
+  
   references_se<-references_df[, .(N=.N), by=list(label, orderName, scientificName)]
+  #references_se<-references_df[, .(N=length(unique(group))), by=list(label, orderName, scientificName)]
+  
   references_se_mean<-references_se[, .(mean_N=mean(N)), by=list(label, orderName)]
   references_se_all<-references_se_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
   references_se_mean<-merge(references_se_mean, references_se_all, by=c("orderName"))
   setorderv(references_se_mean, "N.all")
   p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(orderName), N.all),
                                           y=mean_N, fill=label), stat = "identity")+
-    labs(x="x", y="Mean publications per species", fill="fill")+
+    labs(x="x", y="Mean publications per species", fill="fill", title=group)+
     scale_fill_manual(values=colors[c(4, 6, 7, 8)], 
                       breaks=c("After 2010", "2001 to 2010", "1991 to 2000", "Before 1990"))+
     theme_bw()+
@@ -32,9 +93,12 @@ for (group in groups){
           legend.position = "bottom",
           axis.title.x = element_blank(),
           legend.title = element_blank())
-  ggsave(p, filename=sprintf("../Figures/IUCN/Bars/Fig.mean_by_order.%s.png", group),
-         width=8, height=5, bg = "white")
+  ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order.%s.png", group),
+         width=config[figure=="mean_by_order"]$width, 
+         height=config[figure=="mean_by_order"]$height, 
+         bg = "white")
   
+  #references_se<-references_df[, .(N=length(unique(group))), by=list(label, familyName, scientificName)]
   references_se<-references_df[, .(N=.N), by=list(label, familyName, scientificName)]
   references_se_mean<-references_se[, .(mean_N=mean(N)), by=list(label, familyName)]
   references_se_all<-references_se_mean[, .(N.all=sum(mean_N)), by=list(familyName)]
@@ -42,7 +106,7 @@ for (group in groups){
   setorderv(references_se_mean, "N.all")
   p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(familyName), N.all),
                                              y=mean_N, fill=label), stat = "identity")+
-    labs(x="x", y="Mean publications per species", fill="fill")+
+    labs(x="x", y="Mean publications per species", fill="fill", title=group)+
     scale_fill_manual(values=colors[c(4, 6, 7, 8)], 
                       breaks=c("After 2010", "2001 to 2010", "1991 to 2000", "Before 1990"))+
     theme_bw()+
@@ -52,11 +116,19 @@ for (group in groups){
           
           legend.title = element_blank())
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_family.%s.png", group),
-         width=15, height=7, bg = "white")
-  realms<-readRDS(sprintf("../Data_IUCN_References/REALMS/%s.rda", group))
-  references_se<-references_df[, .(N=.N), by=list(orderName, scientificName)]
+         width=config[figure=="mean_by_family"]$width, 
+         height=config[figure=="mean_by_family"]$height, 
+         bg = "white")
   
-  references_se_with_realm<-merge(references_se, realms, by.x="scientificName", by.y="species.name")
+  
+  realms<-readRDS(sprintf("../Data_IUCN_References/REALMS/%s_IUCN.rda", group))
+  realms$assessmentId<-NULL
+  references_df$is_single_realm<-!grepl("\\|", references_df$realm)
+  references_se<-references_df[, .(N=.N), by=list(internalTaxonId, assessmentId, scientificName, orderName, is_single_realm)]
+  
+  references_se_with_realm<-merge(references_se, realms, 
+                                  by.x=c("internalTaxonId", "scientificName"), 
+                                  by.y=c("internalTaxonId", "species.name"))
   references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N)), by=list(orderName, realm)]
   references_se_all<-references_se_with_realm_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
   references_se_with_realm_mean<-merge(references_se_with_realm_mean, references_se_all, by=c("orderName"))
@@ -66,7 +138,7 @@ for (group in groups){
                                              y=mean_N, fill=realm), stat = "identity", 
                                              position = position_dodge2(width=1, preserve = "single"))+
                                              #position = "dodge")+
-    labs(x="x", y="Mean publications per species", fill="fill")+
+    labs(x="x", y="Mean publications per species", fill="fill", title=sprintf("%s (all realms)", group))+
     scale_fill_manual(values=colors, 
                       breaks=unique(references_se_with_realm_mean$realm))+
     theme_bw()+
@@ -75,11 +147,92 @@ for (group in groups){
           axis.title.x = element_blank(),
           legend.title = element_blank())
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order_realm.%s.png", group),
-         width=15, height=7, bg = "white")
+         width=config[figure=="mean_by_order_realm"]$width, 
+         height=config[figure=="mean_by_order_realm"]$height, 
+         bg = "white")
   
+  references_se_with_realm<-merge(references_se[is_single_realm==T], realms, 
+                                  by.x=c("internalTaxonId", "scientificName"), 
+                                  by.y=c("internalTaxonId", "species.name"))
+  references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N)), by=list(orderName, realm)]
+  references_se_all<-references_se_with_realm_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
+  references_se_with_realm_mean<-merge(references_se_with_realm_mean, references_se_all, by=c("orderName"))
+  setorderv(references_se_with_realm_mean, "N.all")
+  
+  p<-ggplot(references_se_with_realm_mean)+geom_bar(aes(x=reorder(str_to_title(orderName), N.all),
+                                             y=mean_N, fill=realm), stat = "identity", 
+                                             position = position_dodge2(width=1, preserve = "single"))+
+                                             #position = "dodge")+
+    labs(x="x", y="Mean publications per species", fill="fill", title=sprintf("%s (single realm only)", group))+
+    scale_fill_manual(values=colors, 
+                      breaks=unique(references_se_with_realm_mean$realm))+
+    theme_bw()+
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size=12),
+          legend.position = "bottom",
+          axis.title.x = element_blank(),
+          legend.title = element_blank())
+  ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order_realm_single.%s.png", group),
+         width=config[figure=="mean_by_order_realm_single"]$width, 
+         height=config[figure=="mean_by_order_realm_single"]$height, 
+         bg = "white")
   
   references_N<-references_df[,.(N_Speices=length(unique(scientificName)),
-                                 N_References=length(unique(reference))),
+                                 N_References=length(unique(group))),
                               by=list(orderName)]
-  ggplot(references_N)+geom_point(aes(x=))
+  p<-ggplot(references_N, aes(x=N_Speices, y=N_References))+
+    geom_point()+
+    geom_text_repel(aes(label=str_to_title(orderName)))+
+    scale_x_log10()+scale_y_log10()+
+    geom_smooth(method="lm")+
+    labs(x="Number of species", y="Total publications", title=group)+
+    theme_bw()
+  
+  ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.species_vs_order.%s.png", group),
+         width=config[figure=="species_vs_order"]$width, 
+         height=config[figure=="species_vs_order"]$height, 
+         bg = "white")
+  
+  references_N<-references_df[,.(N_Speices=length(unique(scientificName)),
+                                 N_References=length(unique(group))),
+                              by=list(familyName)]
+  references_N$mean<-references_N$N_References/references_N$N_Speices
+  #hist(references_N$mean)
+  threshold<-quantile(references_N$mean, c(0.1, 0.9))
+  p<-ggplot(references_N, aes(x=N_Speices, y=N_References))+
+    geom_point()+
+    geom_text_repel(data=references_N[mean>threshold[2] | mean<threshold[1]], 
+                    aes(label=str_to_title(familyName)))+
+    scale_x_log10()+scale_y_log10()+
+    geom_smooth(method="lm")+
+    labs(x="Number of species", y="Total publications", title=group)+
+    theme_bw()
+  
+  ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.species_vs_family.%s.png", group),
+         width=config[figure=="species_vs_family"]$width, 
+         height=config[figure=="species_vs_family"]$height, 
+         bg = "white")
+  if (group %in% c("Birds", "Mammals")){
+    biomass<-fread(sprintf("../Data_IUCN_References/biomass/%s.csv", group))
+    biomass<-biomass[, .(BodyMass=mean(BodyMass)), by=list(scientificName)]
+    biomass_ref<-merge(biomass, references_df, by=c("scientificName"))
+    biomass_ref_se<-biomass_ref[, .(N=.N, BodyMass=mean(BodyMass)), 
+                                by=list(scientificName, orderName)]
+    biomass_ref_se<-biomass_ref_se[, .(N=mean(N), sd_N=sd(N),
+                                       BodyMass=mean(BodyMass), 
+                                       sd_BodyMass=sd(BodyMass)),
+                                   by=list(orderName)]
+    biomass_ref_se[orderName==toupper("carnivora")]
+    p<-ggplot(biomass_ref_se, aes(x=N, y=BodyMass))+
+      geom_point()+
+      geom_text_repel(aes(label=str_to_title(orderName)))+
+      scale_x_log10()+scale_y_log10()+
+      geom_smooth(method="lm")+
+      labs(x="Mean mass (g)", y="Mean publications", title=group)+
+      theme_bw()
+    
+    ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mass_vs_order.%s.png", group),
+           width=config[figure=="mass_vs_order"]$width, 
+           height=config[figure=="mass_vs_order"]$height, 
+           bg = "white")
+  }
 }
