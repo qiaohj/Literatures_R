@@ -55,6 +55,11 @@ configs<-list("Amphibians"=data.table(width=c(8, 12, 15, 15, 10, 10, 10),
                                              "species_vs_order",
                                              "species_vs_family",
                                              "mass_vs_order")))
+for (group in groups){
+  print(group)
+  references_df<-readRDS(sprintf("../Data_IUCN_References/References/references_%s_cleaned.rda", group))
+  fwrite(references_df, sprintf("../Data_IUCN_References/CSV/references_%s_cleaned.csv", group))
+}
 group<-"Birds"
 for (group in groups){
   print(group)
@@ -93,6 +98,7 @@ for (group in groups){
           legend.position = "bottom",
           axis.title.x = element_blank(),
           legend.title = element_blank())
+  fwrite(references_se_mean, sprintf("../Figures_IUCN/IUCN/CSV/Fig.mean_by_order.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order.%s.png", group),
          width=config[figure=="mean_by_order"]$width, 
          height=config[figure=="mean_by_order"]$height, 
@@ -115,6 +121,7 @@ for (group in groups){
           axis.title.x = element_blank(),
           
           legend.title = element_blank())
+  fwrite(references_se_mean, sprintf("../Figures_IUCN/IUCN/CSV/Fig.mean_by_family.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_family.%s.png", group),
          width=config[figure=="mean_by_family"]$width, 
          height=config[figure=="mean_by_family"]$height, 
@@ -146,6 +153,7 @@ for (group in groups){
           legend.position = "bottom",
           axis.title.x = element_blank(),
           legend.title = element_blank())
+  fwrite(references_se_with_realm_mean, sprintf("../Figures_IUCN/IUCN/CSV/Fig.mean_by_order_realm.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order_realm.%s.png", group),
          width=config[figure=="mean_by_order_realm"]$width, 
          height=config[figure=="mean_by_order_realm"]$height, 
@@ -171,6 +179,8 @@ for (group in groups){
           legend.position = "bottom",
           axis.title.x = element_blank(),
           legend.title = element_blank())
+  fwrite(references_se_with_realm_mean, 
+         sprintf("../Figures_IUCN/IUCN/CSV/Fig.mean_by_order_realm_single.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mean_by_order_realm_single.%s.png", group),
          width=config[figure=="mean_by_order_realm_single"]$width, 
          height=config[figure=="mean_by_order_realm_single"]$height, 
@@ -186,7 +196,8 @@ for (group in groups){
     geom_smooth(method="lm")+
     labs(x="Number of species", y="Total publications", title=group)+
     theme_bw()
-  
+  fwrite(references_N, 
+         sprintf("../Figures_IUCN/IUCN/CSV/Fig.species_vs_order.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.species_vs_order.%s.png", group),
          width=config[figure=="species_vs_order"]$width, 
          height=config[figure=="species_vs_order"]$height, 
@@ -206,7 +217,8 @@ for (group in groups){
     geom_smooth(method="lm")+
     labs(x="Number of species", y="Total publications", title=group)+
     theme_bw()
-  
+  fwrite(references_N, 
+         sprintf("../Figures_IUCN/IUCN/CSV/Fig.species_vs_family.%s.csv", group))
   ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.species_vs_family.%s.png", group),
          width=config[figure=="species_vs_family"]$width, 
          height=config[figure=="species_vs_family"]$height, 
@@ -229,7 +241,8 @@ for (group in groups){
       geom_smooth(method="lm")+
       labs(x="Mean mass (g)", y="Mean publications", title=group)+
       theme_bw()
-    
+    fwrite(biomass_ref_se, 
+           sprintf("../Figures_IUCN/IUCN/CSV/Fig.mass_vs_order.%s.csv", group))
     ggsave(p, filename=sprintf("../Figures_IUCN/IUCN/Bars/Fig.mass_vs_order.%s.png", group),
            width=config[figure=="mass_vs_order"]$width, 
            height=config[figure=="mass_vs_order"]$height, 
