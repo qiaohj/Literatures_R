@@ -15,9 +15,8 @@ for (keyword in keywords){
   out4 <- batch_pubmed_download(pubmed_query_string = ml_query, batch_size = 100, 
                                 dest_dir=target,
                                 dest_file_prefix=YEAR,
-                                api_key="26140c4104533c4c89a8741a0ca7f4673d08")
-  for (t in out4){
-    target_file<-sprintf("%s/%s", target, t)
+                                api_key="")
+  for (t in ou", target, t)
     PM_tab <- table_articles_byAuth(target_file, autofill = TRUE, included_authors = "all")
     if (is.null(PM_tabs)){
       PM_tabs<-PM_tab

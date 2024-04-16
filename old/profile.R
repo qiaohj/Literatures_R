@@ -2,7 +2,7 @@
 library("RMySQL")
 library("purrr")
 library("dplyr")
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="172.16.120.50")
 sql<-"SELECT * FROM Article"
 rs<-dbSendQuery(con, sql)

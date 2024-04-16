@@ -11,7 +11,7 @@ setwd("~/Experiments/PubMed/Script/PubMed_R")
 
 
 source("functions.r")
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="localhost")
 
 fs<-list.files("/media/huijieqiao/QNAS/PubMed/baseline", pattern="\\.gz$")

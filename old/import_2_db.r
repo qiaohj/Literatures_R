@@ -11,7 +11,7 @@ library("R.utils")
 setwd("~/Experiments/PubMed/Script/PubMed_R")
 source("functions.r")
 killDbConnections()
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="localhost")
 fs<-list.files("../../baseline", pattern="\\.gz$")
 #fs<-c("pubmed19n0807.xml.gz")

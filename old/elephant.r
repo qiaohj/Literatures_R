@@ -7,7 +7,7 @@ ml_query <- "(elephant[title]) AND China"
 out4 <- batch_pubmed_download(pubmed_query_string = ml_query, batch_size = 100, 
                               dest_dir=target,
                               dest_file_prefix="elephant",
-                              api_key="26140c4104533c4c89a8741a0ca7f4673d08")
+                              api_key="")
 
 target_file<-sprintf("../pubmed/%s/%s", "elephant", out4[1])
 PM_tab1 <- table_articles_byAuth(target_file, autofill = TRUE, included_authors = "all")

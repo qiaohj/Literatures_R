@@ -60,7 +60,7 @@ is_exist_db<-function(sql){
     return(T)
   }
 }
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="localhost")
 
 fs<-list.files("/media/huijieqiao/QNAS/PubMed/baseline", pattern="\\.gz$")

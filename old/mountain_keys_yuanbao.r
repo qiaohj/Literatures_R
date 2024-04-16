@@ -1,5 +1,5 @@
 library("RMySQL")
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="172.16.120.50")
 keywords1<-c("mountain system", "mountainous region", "elevational gradient", "altitude gradient")
 keywords2<-c("biodiversity", "species richness", "species diversity", "taxonomic diversity",

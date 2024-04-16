@@ -29,7 +29,7 @@ data(package = "genderdata")
 
 library("RMySQL")
 library("purrr")
-con<-dbConnect(MySQL(), user="root", password="mikania", 
+con<-dbConnect(MySQL(), user="", password="", 
                dbname="PubMed", host="172.16.120.50")
 sql<-"SELECT * FROM Author"
 rs<-dbSendQuery(con, sql)
