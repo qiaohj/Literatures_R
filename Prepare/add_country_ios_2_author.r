@@ -99,3 +99,7 @@ for (category in categories){
   table(authors_country$country_type)
   saveRDS(authors_country, target)
 }
+
+
+
+

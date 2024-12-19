@@ -1,5 +1,5 @@
 library(data.table)
-setwd("~/git/literatures/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 if (F){
   #check the data
   for (y in c(1997:2022)){

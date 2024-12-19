@@ -60,7 +60,7 @@ for (group in groups){
   references_df<-readRDS(sprintf("../Data_IUCN_References/References/references_%s_cleaned.rda", group))
   fwrite(references_df, sprintf("../Data_IUCN_References/CSV/references_%s_cleaned.csv", group))
 }
-group<-"Birds"
+group<-"Mammals"
 for (group in groups){
   print(group)
   config<-configs[[group]]
@@ -84,11 +84,19 @@ for (group in groups){
   references_se<-references_df[, .(N=.N), by=list(label, orderName, scientificName)]
   #references_se<-references_df[, .(N=length(unique(group))), by=list(label, orderName, scientificName)]
   
-  references_se_mean<-references_se[, .(mean_N=mean(N)), by=list(label, orderName)]
-  references_se_all<-references_se_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
+  references_se_mean<-references_se[, .(mean_N=mean(N),
+                                        N_species=length(unique(scientificName))), 
+                                    by=list(label, orderName)]
+  references_se_all<-references_df[, .(N.all=length(unique(group)),
+                                            N_species.all=length(unique(scientificName))), by=list(orderName)]
   references_se_mean<-merge(references_se_mean, references_se_all, by=c("orderName"))
-  setorderv(references_se_mean, "N.all")
-  p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(orderName), N.all),
+  references_se_mean$mean_N.all<-references_se_mean$N.all/references_se_mean$N_species.all
+  setorderv(references_se_mean, "mean_N.all")
+  references_se_mean$orderName<-str_to_title(references_se_mean$orderName)
+  references_se_aaa<-references_se_mean[,.(N.all.mean=sum(mean_N)), by=c("orderName")]
+  references_se_mean<-merge(references_se_mean, references_se_aaa, by=c("orderName"))
+  
+  p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(orderName), N.all.mean),
                                           y=mean_N, fill=label), stat = "identity")+
     labs(x="x", y="Mean publications per species", fill="fill", title=group)+
     scale_fill_manual(values=colors[c(4, 6, 7, 8)], 
@@ -106,17 +114,30 @@ for (group in groups){
   
   #references_se<-references_df[, .(N=length(unique(group))), by=list(label, familyName, scientificName)]
   references_se<-references_df[, .(N=.N), by=list(label, familyName, scientificName)]
-  references_se_mean<-references_se[, .(mean_N=mean(N)), by=list(label, familyName)]
-  references_se_all<-references_se_mean[, .(N.all=sum(mean_N)), by=list(familyName)]
+  references_se_mean<-references_se[, .(mean_N=mean(N),
+                                        N_species=length(unique(scientificName))), 
+                                    by=list(label, familyName)]
+  references_se_all<-references_df[, .(N.all=length(unique(group)),
+                                       N_species.all=length(unique(scientificName))), by=list(familyName)]
   references_se_mean<-merge(references_se_mean, references_se_all, by=c("familyName"))
+  references_se_mean$mean_N.all<-references_se_mean$N.all/references_se_mean$N_species.all
   setorderv(references_se_mean, "N.all")
-  p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(familyName), N.all),
+  references_se_mean$familyName<-str_to_title(references_se_mean$familyName)
+  
+  font_size<-6
+  if (group=="Odonata"){
+    font_size<-10
+  }
+  references_se_mean[familyName=="Devadattidae"]
+  references_se_aaa<-references_se_mean[,.(N.all.mean=sum(mean_N)), by=c("familyName")]
+  references_se_mean<-merge(references_se_mean, references_se_aaa, by=c("familyName"))
+  p<-ggplot(references_se_mean)+geom_bar(aes(x=reorder(str_to_title(familyName), N.all.mean),
                                              y=mean_N, fill=label), stat = "identity")+
     labs(x="x", y="Mean publications per species", fill="fill", title=group)+
     scale_fill_manual(values=colors[c(4, 6, 7, 8)], 
                       breaks=c("After 2010", "2001 to 2010", "1991 to 2000", "Before 1990"))+
     theme_bw()+
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6),
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=font_size),
           legend.position = "bottom",
           axis.title.x = element_blank(),
           
@@ -136,7 +157,12 @@ for (group in groups){
   references_se_with_realm<-merge(references_se, realms, 
                                   by.x=c("internalTaxonId", "scientificName"), 
                                   by.y=c("internalTaxonId", "species.name"))
-  references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N)), by=list(orderName, realm)]
+  
+  
+  
+  references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N),
+                                                              N_species=length(unique(scientificName))), 
+                                                          by=list(orderName, realm)]
   references_se_all<-references_se_with_realm_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
   references_se_with_realm_mean<-merge(references_se_with_realm_mean, references_se_all, by=c("orderName"))
   setorderv(references_se_with_realm_mean, "N.all")
@@ -162,7 +188,9 @@ for (group in groups){
   references_se_with_realm<-merge(references_se[is_single_realm==T], realms, 
                                   by.x=c("internalTaxonId", "scientificName"), 
                                   by.y=c("internalTaxonId", "species.name"))
-  references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N)), by=list(orderName, realm)]
+  references_se_with_realm_mean<-references_se_with_realm[, .(mean_N=mean(N),
+                                                              N_species=length(unique(scientificName))), 
+                                                          by=list(orderName, realm)]
   references_se_all<-references_se_with_realm_mean[, .(N.all=sum(mean_N)), by=list(orderName)]
   references_se_with_realm_mean<-merge(references_se_with_realm_mean, references_se_all, by=c("orderName"))
   setorderv(references_se_with_realm_mean, "N.all")

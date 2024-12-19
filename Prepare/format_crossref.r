@@ -52,7 +52,28 @@ getValue<-function(node, key, type="character"){
   v
 }
 
-source_folder<-"../RAW/April 2023 Public Data File from Crossref/"
+if (F){
+  #compare the cross refs
+  source_folder_2023<-"../RAW/April 2023 Public Data File from Crossref/"
+  
+  zips_2023<-list.files(source_folder_2023, pattern = "\\.gz")
+  
+  source_folder_2024<-"../RAW/April 2024 Public Data File from Crossref/"
+  
+  zips_2024<-list.files(source_folder_2024, pattern = "\\.gz")
+  
+  filesize_2023<-file.size(sprintf("%s/%s", source_folder_2023, zips_2023))
+  filesize_2024<-file.size(sprintf("%s/%s", source_folder_2024, zips_2024))
+  
+  file_2023<-data.table(zips=zips_2023, size=filesize_2023, year=2023)
+  file_2024<-data.table(zips=zips_2024, size=filesize_2024, year=2024)
+  file_match<-merge(file_2023, file_2024, by=c("zips", "size"), all=T)
+  file_match[is.na(year.x)]
+  file_2023[zips=="0.json.gz"]
+  file_2024[zips=="0.json.gz"]
+}
+
+source_folder<-"../RAW/April 2024 Public Data File from Crossref/"
 
 zips<-list.files(source_folder, pattern = "\\.gz")
 #zips<-zips[sample(length(zips), length(zips))]
@@ -237,9 +258,13 @@ if (F){
 if (F){
   library(data.table)
   setwd("/media/huijieqiao/WD22T_11/literatures/Script")
+  print("reading articles")
   article_df<-readRDS("../Data/CrossRef_Full/articles.rda")
+  print("reading journals.rda")
   journal_df<-readRDS("../Data/CrossRef_Full/journals.rda")
+  print("reading article_subject.rda")
   article_subject_df<-readRDS("../Data/CrossRef_Full/article_subject.rda")
+  print("reading authors.rda")
   author_df<-readRDS("../Data/CrossRef_Full/authors.rda")
   
   journal_df$ISSN<-as.character(journal_df$ISSN)
@@ -360,4 +385,12 @@ if (F){
     scale_x_log10()
   article_year<-article_df[, .(N=.N), by=list(Year)]
   ggplot(article_year)+geom_point(aes(x=Year, y=N))
+}
+if (F){
+  #28700.rda
+  df_2023<-readRDS("/media/huijieqiao/WD22T_11/literatures/Data/CrossRef_2023/datatable_crossref/1.rda")
+  df_2024<-readRDS("/media/huijieqiao/WD22T_11/literatures/Data/datatable_crossref/1.rda")
+  
+  tail(df_2023$articles$doi)
+  tail(df_2024$articles$doi)
 }

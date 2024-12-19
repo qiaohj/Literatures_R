@@ -32,8 +32,8 @@ if (F){
 source("functions.r")
 #category<-"missing_journals_ecology_biodiversity"
 #category<-"Ecology"
-#category<-"Biodiversity Conservation"
-category<-"WeedScience"
+category<-"Biodiversity Conservation"
+#category<-"Ecology"
 article_df<-readArticle(category, all=T)
 table(article_df$type)
 
