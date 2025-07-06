@@ -55,6 +55,7 @@ if (F){
 if (F){
   articles$github<-""
   articles$double_check<-F
+  articles$with_github<-F
   for (i in c(1:nrow(articles))){
     print(i)
     if (articles[i]$github!=""){
@@ -73,6 +74,7 @@ if (F){
         articles[i]$double_check<-T
       }
       text<-gsub("\n", "", text)
+      articles[i]$with_github<-grepl("github", text)
       pattern <- "([\\w.-]*github[\\w.-]*|github[\\w.-]*)(/[\\w/?.&=]*)?"
       github_links <- str_extract_all(text, pattern)[[1]]
       
@@ -91,10 +93,12 @@ if (F){
       }
     }
   }
+  saveRDS(articles, "../Data/MEE/mee.rda")
 }
 
 if (F){
   fff<-readRDS("/media/huijieqiao/WD22T_11/literatures/Data/CrossRef_Full/references.rda")
+  aaa<-readRDS("/media/huijieqiao/WD22T_11/literatures/Data/CrossRef_Full/articles.rda")
   articles<-readRDS("../Data/MEE/mee.rda")
   ref<-list()
   for (i in c(1:length(fff))){
@@ -107,4 +111,10 @@ if (F){
   }
   ref_df<-rbindlist(ref)
   saveRDS(ref_df, "../Data/MEE/mee_references.rda")
+  
+  
+  text <- "Visit https://github.com/user/repo or https://www.github.com/user/repo or http://github.io/user/repo?query=1."
+  matches <- regmatches(text, gregexpr("https?://(?:[a-zA-Z0-9-]+\\.)*github\\.[a-z]{2,}(?:/[^\\s]*)?", text))
+  print(matches)
+  
 }

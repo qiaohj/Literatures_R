@@ -1,6 +1,7 @@
 library(R.utils)
 library(rjson)
 library(data.table)
+library(stringi)
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
 
 
@@ -73,79 +74,100 @@ if (F){
   file_2024[zips=="0.json.gz"]
 }
 
-source_folder<-"../RAW/April 2024 Public Data File from Crossref/"
+source_folder<-"../RAW/March 2025 Public Data File from Crossref/"
 
 zips<-list.files(source_folder, pattern = "\\.gz")
 #zips<-zips[sample(length(zips), length(zips))]
-i=28573
+i=1
+
 match("9883.json.gz", zips)
+year<-2025
 for (i in c(1:length(zips))){
   f<-zips[i]
   
   print(paste(i, length(zips), f))
-  name<-gsub("\\.json\\.gz", "", f)
-  target<-sprintf("../Data/datatable_crossref/%s.rda", name)
+  name<-gsub("\\.jsonl\\.gz", "", f)
+  target<-sprintf("../Data/datatable_crossref/%d/%s.rda", year, name)
   if (file.exists(target)){
     next()
   }
   saveRDS(NULL, target)
-  xml<-sprintf("../Data/json_crossref/%s.json", name)
+  xml<-sprintf("../Data/json_crossref/%d/%s.json", year, name)
   if (!file.exists(xml)){
     gunzip(sprintf("%s/%s", source_folder, f), remove=FALSE,
            destname = xml)
   }
-  result <- fromJSON(file = xml)
+  lines <- readLines(xml)
+  results <- lapply(lines, fromJSON)
+  
   
   article_list<-list()
   journal_issn<-list()
   article_subject<-list()
   author_list<-list()
   reference_list<-list()
-  for (j in c(1:length(result$items))){
+  for (j in c(1:length(results))){
     if (j %% 1000 ==0){
-      print(paste(i, length(zips), f, j, length(result$items)))
+      print(paste(i, length(zips), f, j, length(results)))
     }
-    item<-result$items[[j]]
+    item<-results[[j]]
     doi<-getValue(item, "DOI")
     url<-getValue(item, "URL")
     abstract<-getValue(item, "abstract")
+    alternative.id<-getValue(item, "alternative-id")
     resource_primary_url<-getValue(item$resource$primary, "URL")
     created_date<-getValue(item$created, "date-time", type="datetime")
     issn<-paste(getValue(item, "ISSN"), collapse ="|")
+    issn_type<-paste(getValue(item, "issn-type"), collapse ="|")
     container_title<-paste(getValue(item, "container-title"), collapse ="|")
-    journal_issn[[length(journal_issn)+1]]<-data.table(expand.grid(article_DOI=doi,
-                                                                   Title=getValue(item, "container-title"), 
-                                                                   ISSN=getValue(item, "ISSN")))
+    short_container_title<-paste(getValue(item, "short-container-title"), collapse ="|")
+    content_domain<-paste(getValue(item, "content-domain"), collapse ="|")
+    prefix<-getValue(item, "prefix")
+    journal_issn[[length(journal_issn)+1]]<-data.table(article_DOI=doi,
+                                                       Title=container_title,
+                                                       short_container_title=short_container_title,
+                                                       content_domain=content_domain,
+                                                       ISSN=issn,
+                                                       prefix=prefix,
+                                                       stringsAsFactors = F)
+    
     if (class(item$issue)=="character"){
       issue<-getValue(item, "issue")
     }else{
       issue<-getValue(item$issue, "date-parts")
       issue<-as.character(issue)
     }
+    issued<-paste(getValue(item, "issued"), collapse ="|")
+    journal_issue<-paste(getValue(item, "journal-issue"), collapse ="|")
     reference_count<-getValue(item, "reference-count", type="numeric")
+    is_referenced_by_count<-getValue(item, "is-referenced-by-count", type="numeric")
     indexed<-getValue(item$indexed, "date-time", type="datetime")
     deposited<-getValue(item$deposited, "date-time", type="datetime")
     language<-getValue(item, "language")
+    license<-paste(getValue(item, "license"), collapse = "|")
     page<-getValue(item, "page")
+    member<-getValue(item, "member")
+    score<-getValue(item, "score")
     
     published<-getValue(item$published, "date-parts", type="datetime_array")
     published_print<-getValue(item$`published-print`, "date-parts", type="datetime_array")
     published_online<-getValue(item$`published-online`, "date-parts", type="datetime_array")
     published_others<-getValue(item$`published-others`, "date-parts", type="datetime_array")
     publisher<-getValue(item, "publisher")
-    subject<-paste(getValue(item, "subject"), collapse = "|")
-    article_subject[[length(article_subject)+1]]<-data.table(article_DOI=doi, 
-                                                             Subject=getValue(item, "subject"))
+    
     title<-getValue(item, "title")
     type<-getValue(item, "type")
-    
+    source<-getValue(item, "source")
     volume<-getValue(item, "volume")
     
-    article_list[[length(article_list)+1]]<-data.frame(doi=doi, issue=issue, volume=volume, 
-                                                       page=page, language=language,
+    article_list[[length(article_list)+1]]<-data.table(doi=doi, issue=issue, volume=volume, 
+                                                       page=page, language=language, member=member,
+                                                       score=score,
                                                        issn=issn, container_title=container_title, 
                                                        reference_count=reference_count,
-                                                       type=type, subject=subject,
+                                                       is_referenced_by_count=is_referenced_by_count,
+                                                       type=type, license=license, source=source,
+                                                       alternative.id=alternative.id,
                                                        title=title, abstract=abstract,
                                                        url=url, resource_primary_url=resource_primary_url,
                                                        created_date=created_date, 
@@ -154,10 +176,13 @@ for (i in c(1:length(zips))){
                                                        published_print=published_print, 
                                                        published_online=published_online,
                                                        published_others=published_others, 
-                                                       publisher=publisher)
+                                                       publisher=publisher,
+                                                       stringsAsFactors = F)
     references<-item$reference
     authors<-item$author
-    k=1
+    authors$article_DOI=doi
+    authors$Sort<-c(1:nrow(authors))
+    author_list[[length(author_list)+1]]<-authors
     for (k in c(1:length(authors))){
       author_item<-authors[[k]]
       ORCID<-getValue(author_item, "ORCID")
@@ -211,6 +236,16 @@ for (i in c(1:length(zips))){
   article_subject_df<-rbindlist(article_subject)
   author_df<-rbindlist(author_list)
   reference_df<-rbindlist(reference_list)
+  
+  journals[, c("doi.prefix", "doi.suffix") := {
+    parts <- stri_split_fixed(article_DOI, "/", n = 2)
+    list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
+  }]
+  journals[, c("doi.key", "doi.id") := {
+    parts <- stri_split_fixed(doi.suffix, "\\.", n = 2)
+    list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
+  }]
+  
   df<-list(articles=article_df,
            journals=journal_df,
            article_subject=article_subject_df,
