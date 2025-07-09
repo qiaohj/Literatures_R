@@ -1,6 +1,6 @@
 library(data.table)
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
-dir_path<-"/media/huijieqiao/WD22T_11/literatures/Data/PDF/"
+dir_path<-"/media/huijieqiao/WD22T_11/literatures/Data/PDF/OECOLOGIA"
 files <- list.files(path = dir_path, pattern = "\\.pdf$", recursive = TRUE, full.names = TRUE)
 dt <- data.table(path = files)
 

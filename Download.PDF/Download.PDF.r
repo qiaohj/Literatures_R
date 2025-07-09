@@ -31,8 +31,8 @@ if (F){
 
 categories<-list.files("../Data/JCR/Target.Journals/", pattern="\\.csv")
 categories<-gsub("\\.csv", "", categories)
-category<-"Biology.2025"
-crossref.year<-2024
+category<-"AGRONOMY.2025"
+crossref.year<-2025
 pdfs<-readRDS("../Data/full_pdf_scihub.rda")
 pdfs$DOI2<-tolower(pdfs$DOI2)
 getISSN.folder<-function(issn){

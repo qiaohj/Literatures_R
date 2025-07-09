@@ -38,6 +38,8 @@ getISSN.folder<-function(issn){
 #journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
 #journal<-journal.conf[journal==journal.name]
 
+
+
 if (F){
   jcr_journals<-list.files("../Data/JCR/Target.Journals", pattern="\\.csv")
   journals<-list()
@@ -62,9 +64,15 @@ journals<-readRDS("../Data/JCR/Target.Journals.rda")
 crossref.year<-2025
 i=1
 journals<-journals[sample(nrow(journals), nrow(journals))]
-
+journal.names<-c("JOURNAL OF ECOLOGY", "ECOLOGY", "OIKOS", "OECOLOGIA",
+  "SEED SCIENCE AND TECHNOLOGY", "SEED SCIENCE RESEARCH", "JOURNAL OF SEED SCIENCE",
+  "PLANT PHYSIOLOGY", "NEW PHYTOLOGIST", "ANNALS OF BOTANY",
+  "FRONTIERS IN PLANT SCIENCE")
+journal.index<-4
+done<-c(1, 3, 4, 6)
 for (i in c(1:nrow(journals))){
-  conf.item<-journals[i]
+  #conf.item<-journals[i]
+  conf.item<-journals[journal==journal.names[journal.index]]
   journal.name<-conf.item$journal
   
   target_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s", journal.name)
@@ -72,7 +80,7 @@ for (i in c(1:nrow(journals))){
   if (!dir.exists(target_folder)){
     dir.create(target_folder)
   }else{
-    next()
+    #next()
   }
   if (!dir.exists(middle_folder)){
     dir.create(middle_folder)
@@ -120,6 +128,7 @@ for (i in c(1:nrow(journals))){
                             target_folder, URLencode(toupper(article_item$doi.suffix), reserved = T))
   article_item<-article_item[!file.exists(article_item$xml)]
   setorderv(article_item, "pdf", -1)
+  article_item<-article_item[sample(nrow(article_item), nrow(article_item))]
   for (j in c(1:nrow(article_item))){
     print(paste(j, nrow(article_item), article_item[j]$pdf))
     
@@ -188,6 +197,14 @@ for (i in c(1:nrow(journals))){
     
     
   }
+  if (F){
+    #article_item$published
+    article_item<-article_item[!file.exists(article_item$xml)]
+    output<-article_item[, c("doi", "issue", "volume", "page", "resource_primary_url", "pdf", "title")]
+    output$pdf<-gsub(sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/", journal.names[journal.index]), "",
+                             output$pdf)
+    fwrite(output, sprintf("~/Downloads/%s.csv", journal.names[journal.index]))
+  }
   if (journal.name %in% c("TROPICAL PLANT PATHOLOGY")){
     next()
   }
@@ -209,10 +226,15 @@ for (i in c(1:nrow(journals))){
     }
   }
   j=1
-  next()
+  #next()
   #all_articles$doi.suffix<-
   #  gsub("j.1365-2699", "j.1466-822x", all_articles$doi.suffix)
   if (F){
+    
+    all_articles.bak<-all_articles
+    all_articles<-all_articles[grepl("wiley", all_articles$resource_primary_url)]
+    all_articles<-all_articles[grepl("-", all_articles$doi.suffix)]
+    all_articles$doi.suffix<-sprintf("%s.1", all_articles$doi.suffix)
     all_articles$doi.suffix <- sub("^j\\.(.*?)\\.(\\d{4}-\\d{4})\\.(.*?)$", "j.\\2.\\1.\\3", all_articles$doi.suffix)
     
     all_articles$doi.suffix<-str_replace(all_articles$doi.suffix, 
@@ -236,6 +258,7 @@ for (i in c(1:nrow(journals))){
   if (nrow(all_articles)==0){
     next()
   }
+  all_articles<-all_articles[sample(nrow(all_articles), nrow(all_articles))]
   for (j in c(start:nrow(all_articles))){
     item<-all_articles[j]
     
@@ -518,9 +541,8 @@ for (i in c(1:nrow(journals))){
       
     }
     #downloadPDF(item$resource_primary_url, item$doi.prefix, item$doi.suffix, item$publisher, filename)
-    
-    
   }
+  
   
   if (!is.null(error.df)){
     error.df<-unique(rbindlist(list(error.df, all_articles)))
