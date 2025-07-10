@@ -101,6 +101,7 @@ keywords_dt[, lower_alias := tolower(alias)]
 
 pdfs<-list.files("/Users/huijieqiao/PDF/TEST", pattern="\\.pdf")
 lengths_list<-list()
+extracted_list<-list()
 for (file.name in pdfs){
   file.name<-gsub("\\.pdf", "", file.name)
   print(file.name)
@@ -140,6 +141,7 @@ for (file.name in pdfs){
     extracted_data[!label %in% c("body", "back"), active_section:=NA]
     #View(extracted_data)
   }
+  extracted_list[[length(extracted_list)+1]]<-extracted_data
   
   text_A<-paste(full.text, collapse =" ")
   text_A<-str_replace_all(text_A, "\\s+", " ") %>% str_trim()
@@ -164,6 +166,7 @@ for (file.name in pdfs){
 
 
 lengths_all<-rbindlist(lengths_list)
+extracted_all<-rbindlist(extracted_list)
 
 #View(lengths_all)
 
