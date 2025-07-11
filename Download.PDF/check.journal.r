@@ -14,6 +14,14 @@ getISSN.folder<-function(issn){
   return(sprintf("%s/%s-%s", issn.items[1], issn.items[1], issn.items[2]))
 }
 
+args = commandArgs(trailingOnly=TRUE)
+api_index<-as.numeric(args[1])
+if (is.na(api_index)){
+  api_index<-1
+}
+wiley.api<-wiley.api[api_index]
+elsevier.api<-elsevier.api[api_index]
+
 #category<-"Ecology.2025"
 #journal.name<-"GLOBAL CHANGE BIOLOGY" (DONE 2025)
 #journal.name<-"NATURE ECOLOGY AND EVOLUTION" (DONE 2025)
@@ -68,13 +76,15 @@ journal.names<-c("JOURNAL OF ECOLOGY", "ECOLOGY", "OIKOS", "OECOLOGIA",
   "SEED SCIENCE AND TECHNOLOGY", "SEED SCIENCE RESEARCH", "JOURNAL OF SEED SCIENCE",
   "PLANT PHYSIOLOGY", "NEW PHYTOLOGIST", "ANNALS OF BOTANY",
   "FRONTIERS IN PLANT SCIENCE")
-journal.index<-4
+journal.index<-11
 done<-c(1, 3, 4, 6)
+t.journal.name<-"ECOLOGY"
+conf.item<-journals[journal==t.journal.name]
 for (i in c(1:nrow(journals))){
-  #conf.item<-journals[i]
-  conf.item<-journals[journal==journal.names[journal.index]]
+  conf.item<-journals[i]
+  #conf.item<-journals[journal==journal.names[journal.index]]
   journal.name<-conf.item$journal
-  
+  print(journal.name)
   target_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s", journal.name)
   middle_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/Middle.PDF/%s", journal.name)
   if (!dir.exists(target_folder)){
@@ -203,7 +213,7 @@ for (i in c(1:nrow(journals))){
     output<-article_item[, c("doi", "issue", "volume", "page", "resource_primary_url", "pdf", "title")]
     output$pdf<-gsub(sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/", journal.names[journal.index]), "",
                              output$pdf)
-    fwrite(output, sprintf("~/Downloads/%s.csv", journal.names[journal.index]))
+    fwrite(output, sprintf("~/Downloads/Missing.PDF/%s.csv", journal.names[journal.index]))
   }
   if (journal.name %in% c("TROPICAL PLANT PATHOLOGY")){
     next()
@@ -549,5 +559,5 @@ for (i in c(1:nrow(journals))){
   }else{
     error.df<-all_articles
   }
-  #saveRDS(error.df, error.pdf)
+  saveRDS(error.df, error.pdf)
 }

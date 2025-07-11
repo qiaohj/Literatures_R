@@ -2,7 +2,9 @@ library(xml2)
 library(data.table)
 library(stringr)
 library(zoo)
-
+library(ggplot2)
+library(scales)
+library(pdftools)
 if (F){
   pdfs<-list.files("/Users/huijieqiao/PDF/TEST", pattern="\\.pdf")
   lengths_list<-list()
@@ -10,7 +12,7 @@ if (F){
     file.name<-gsub("\\.pdf", "", file.name)
     print(file.name)
     
-    xml_file_path <- sprintf("/Users/huijieqiao/PDF/TEST/%s.xml", file.name)
+    xml_file_path <- sprintf("/media/huijieqiao/WD22T_11/literatures/Temp/TEST/%s.xml", file.name)
     doc <- read_xml(xml_file_path)
     
     all_nodes <- xml_find_all(doc, "//*")
@@ -99,17 +101,17 @@ keywords_file <- "RAG.LLM/section_keywords.csv"
 keywords_dt <- fread(keywords_file)
 keywords_dt[, lower_alias := tolower(alias)]
 
-pdfs<-list.files("/Users/huijieqiao/PDF/TEST", pattern="\\.pdf")
+pdfs<-list.files("/media/huijieqiao/WD22T_11/literatures/Temp/TEST/", pattern="\\.pdf")
 lengths_list<-list()
 extracted_list<-list()
 for (file.name in pdfs){
   file.name<-gsub("\\.pdf", "", file.name)
   print(file.name)
-  pdf_file_path <- sprintf("/Users/huijieqiao/PDF/TEST/%s.pdf", file.name)
+  pdf_file_path <- sprintf("/media/huijieqiao/WD22T_11/literatures/Temp/TEST/%s.pdf", file.name)
   full.text<-pdf_text(pdf_file_path)
   nchar.full.text<-sum(nchar(full.text))
   
-  xml_file_path <- sprintf("/Users/huijieqiao/PDF/TEST/%s.xml", file.name)
+  xml_file_path <- sprintf("/media/huijieqiao/WD22T_11/literatures/Temp/TEST/%s.xml", file.name)
   
   doc <- read_xml(xml_file_path)
   ns <- xml_ns(doc)
@@ -141,6 +143,8 @@ for (file.name in pdfs){
     extracted_data[!label %in% c("body", "back"), active_section:=NA]
     #View(extracted_data)
   }
+  
+  extracted_data$file.name<-file.name
   extracted_list[[length(extracted_list)+1]]<-extracted_data
   
   text_A<-paste(full.text, collapse =" ")
@@ -167,7 +171,7 @@ for (file.name in pdfs){
 
 lengths_all<-rbindlist(lengths_list)
 extracted_all<-rbindlist(extracted_list)
-
+saveRDS(extracted_all, "../Temp/extracted_all.rda")
 #View(lengths_all)
 
 plot_data <- lengths_all[
@@ -196,7 +200,6 @@ ggplot(plot_data, aes(x = Bar_Group, y = Character_Count, fill = active_section)
     y = "Total Character Count",
     fill = "Data Section"
   ) +
-  scale_y_continuous(labels = comma) +
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),
