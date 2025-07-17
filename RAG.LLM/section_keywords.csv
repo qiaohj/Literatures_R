@@ -1,25 +1,38 @@
 canonical_name,alias
 Introduction,Introduction
+Introduction,Theoretical Framework
+Introduction,Conceptual Framework
+Introduction,Main
 Introduction,Background
 Methods,Methods
 Methods,Materials and Methods
+Methods,Material and Methods
 Methods,Experimental Procedures
 Methods,Experimental
 Methods,Methodology
 Methods,Study design
+Methods,Study Site and Methods
+Methods,Experimental Design
 Methods,Research design and methods
-Results,Results
 Results,Result
+Results,Results
 Results,Experimental results
+Results,Results and Discussion
 Discussion,Discussion
 Discussion,Interpretation
+Discussion,Synthesis
+Discussion,General Discussion
+Discussion,Ecological Implications
 Conclusion,Conclusion
 Conclusion,Conclusions
-Conclusion,Concluding remarks
+Conclusion,Concluding Remarks
+Conclusion,Outlook
+Conclusion,Future Perspectives
 Acknowledgements,Acknowledgements
 Acknowledgements,ACKNOWLEDGMENTS
 Acknowledgements,Funding
 Acknowledgements,Author contributions
+Acknowledgements,Data Availability Statement
 Supplementary,Supporting Information
 Supplementary,SUPPLEMENTARY INFORMATION
 Supplementary,Online supporting information
@@ -27,15 +40,28 @@ Supplementary,Data availability
 Supplementary,Supplementary Materials
 Supplementary,Additional Information
 Supplementary,Supplemental Data
+Supplementary,Appendices
+Supplementary,Electronic Supplementary Material
 Ethics,Ethical approval
 Ethics,Ethical considerations
 Ethics,Ethics statement
+Ethics,Permits
+Review,Literature Review
+Review,Review of Literature
+Review,Tansley Review
+Review,Tansley Insight
+Review,Forum
+Review,Perspective
+Review,Opinion
+Theory,Theory
+Theory,Theoretical Framework
+Theory,Theoretical Background
+Theory,Conceptual Framework
+Limitations,Limitations
+Limitations,Study limitations
+Limitations,Caveats and Limitations
 Conflict,Competing interests
 Conflict,Conflict of interest statement
 Conflict,Declaration of competing interest
-Review,Literature Review
-Review,Review of Literature
-Theory,Theoretical Framework
-Theory,Theory
-Limitations,Limitations
-Limitations,Study limitations
+Body,Body
+Back,Back
