@@ -78,7 +78,7 @@ journal.names<-c("JOURNAL OF ECOLOGY", "ECOLOGY", "OIKOS", "OECOLOGIA",
   "FRONTIERS IN PLANT SCIENCE")
 journal.index<-11
 done<-c(1, 3, 4, 6)
-t.journal.name<-"ECOLOGY"
+t.journal.name<-"PLANTS-BASEL"
 conf.item<-journals[journal==t.journal.name]
 for (i in c(1:nrow(journals))){
   conf.item<-journals[i]
@@ -150,6 +150,7 @@ for (i in c(1:nrow(journals))){
     if (!file.exists(article_item[j]$pdf)){
       next()
     }
+    text<-NULL
     text<-tryCatch({
       pdf_text(article_item[j]$pdf)
     },
@@ -199,9 +200,9 @@ for (i in c(1:nrow(journals))){
     } else {
       cat("Error:", status_code(res), "\n")
       if (status_code(res)==500){
-        file.rename(article_item[j]$pdf, 
-                    sprintf("%s/%s", middle_folder, pdf))
-        print("MOVED")
+        #file.rename(article_item[j]$pdf, 
+        #            sprintf("%s/%s", middle_folder, pdf))
+        #print("MOVED")
       }
     }
     
@@ -298,6 +299,16 @@ for (i in c(1:nrow(journals))){
     
     tryCatch({
       no.service<-T
+      if (publisher=="MDPI AG"){
+        next()
+        no.service<-F
+        pdf.url<-sprintf("%s/pdf", url)
+        download.file(pdf.url, 
+                      destfile = filename, method="wget",
+                      extra="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        next()
+      }
+      
       if (endsWith(tolower(url), ".pdf")){
         no.service<-F
         download.file(url, 
@@ -371,14 +382,7 @@ for (i in c(1:nrow(journals))){
           next()
         }
       }
-      if (publisher=="MDPI AG"){
-        no.service<-F
-        pdf.url<-sprintf("%s/pdf", url)
-        download.file(pdf.url, 
-                      destfile = filename, method="wget",
-                      extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
-        next()
-      }
+      
       if (grepl("\\.plos\\.", url)){
         no.service<-F
         webpage <- safe_read_html(url)
