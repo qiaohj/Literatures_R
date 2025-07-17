@@ -6,7 +6,7 @@ library(RCurl)
 library(rvest)
 library(httr)
 library(pdftools)
-setwd("/media/huijieqiao/WD22T_11/literatures/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 source("Download.PDF/read_html.r")
 source("../tokens.r")
 getISSN.folder<-function(issn){
