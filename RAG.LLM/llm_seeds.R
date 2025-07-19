@@ -46,11 +46,9 @@ for (pdf_path in pdfs){
     grobid_url,
     body = list(
       input = upload_file(pdf_path),
-      segmentSentences=1,
-      consolidateHeader=1,
+      segmentSentences=0,
       includeRawAffiliations=1,
-      consolidatFunders=1,
-      includeRawCitations=1)
+      consolidatFunders=1)
   )
   target<-gsub("\\.pdf", "\\.xml", pdf_path)
   
@@ -137,6 +135,8 @@ clean_text_from_nodes <- function(nodes, clean.head=F, label="",
 keywords_file <- "RAG.LLM/section_keywords.csv"
 keywords_dt <- fread(keywords_file)
 keywords_dt[, lower_alias := tolower(alias)]
+keywords_dt$lower_alias<-trimws(gsub(" ", "", keywords_dt$lower_alias))
+
 
 pdfs<-list.files("/Users/huijieqiao/PDF/Training.SEEDS", pattern="\\.pdf", full.names = F)
 file.name<-pdfs[1]
@@ -184,7 +184,8 @@ for (i in c(1:length(pdfs))){
       extracted_data[label=="back", head:="Back"]
     }
     extracted_data[, lower_heading := tolower(head)]
-    
+    extracted_data$lower_heading<-trimws(gsub("\\|", " ", extracted_data$lower_heading))
+    extracted_data$lower_heading<-trimws(gsub(" ", "", extracted_data$lower_heading))
     extracted_data[keywords_dt, on = .(lower_heading = lower_alias), canonical_name := i.canonical_name]
     extracted_data[, active_section := na.locf(canonical_name, na.rm = FALSE)]
     
