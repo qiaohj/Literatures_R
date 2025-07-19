@@ -39,7 +39,7 @@ grobid_url <- "http://localhost:8070/api/processFulltextDocument"
 
 pdfs<-list.files("/Users/huijieqiao/PDF/Training.SEEDS", pattern="\\.pdf", full.names = T)
 pdf_path<-pdfs[1]
-
+pdf_path<-"/Users/huijieqiao/PDF/Training.SEEDS/2986.pdf"
 for (pdf_path in pdfs){
   print(pdf_path)
   res <- POST(
@@ -138,14 +138,16 @@ keywords_file <- "RAG.LLM/section_keywords.csv"
 keywords_dt <- fread(keywords_file)
 keywords_dt[, lower_alias := tolower(alias)]
 
-lengths_list<-list()
-extracted_list<-list()
 pdfs<-list.files("/Users/huijieqiao/PDF/Training.SEEDS", pattern="\\.pdf", full.names = F)
 file.name<-pdfs[1]
 attr.names<-c("level", "type", "status", "when", "unit", "from", "to")
 xpaths<-fread("RAG.LLM/xpath.csv")
 
-for (file.name in pdfs){
+lengths_list<-list()
+extracted_list<-list()
+
+for (i in c(1:length(pdfs))){
+  file.name<-pdfs[i]
   file.name<-gsub("\\.pdf", "", file.name)
   print(file.name)
   if (file.exists( sprintf("/Users/huijieqiao/PDF/Training.SEEDS/%s.rda", file.name))){
@@ -186,7 +188,7 @@ for (file.name in pdfs){
     extracted_data[keywords_dt, on = .(lower_heading = lower_alias), canonical_name := i.canonical_name]
     extracted_data[, active_section := na.locf(canonical_name, na.rm = FALSE)]
     
-    extracted_data[is.na(active_section), active_section := "Preamble"]
+    extracted_data[is.na(active_section), active_section := "Unknown"]
     
     extracted_data[!label %in% c("body", "back"), active_section:=NA]
     #View(extracted_data)
@@ -222,8 +224,12 @@ for (file.name in pdfs){
 
 lengths_all<-rbindlist(lengths_list)
 extracted_all<-rbindlist(extracted_list, use.names=T)
-#saveRDS(extracted_all, "../Temp/extracted_all.rda")
+#saveRDS(extracted_all, "../extracted_all.rda")
 #View(lengths_all)
+hist(lengths_all[active_section=="full.xml"]$Character_Count)
+range(lengths_all[active_section=="full.xml"]$Character_Count)
+lengths_all[active_section=="full.xml" & Character_Count<5000]
+
 
 plot_data <- lengths_all[
   , Bar_Group := fcase(
