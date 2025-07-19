@@ -78,7 +78,7 @@ journal.names<-c("JOURNAL OF ECOLOGY", "ECOLOGY", "OIKOS", "OECOLOGIA",
   "FRONTIERS IN PLANT SCIENCE")
 journal.index<-11
 done<-c(1, 3, 4, 6)
-t.journal.name<-"PLANTS-BASEL"
+t.journal.name<-"METHODS IN ECOLOGY AND EVOLUTION"
 conf.item<-journals[journal==t.journal.name]
 for (i in c(1:nrow(journals))){
   conf.item<-journals[i]
