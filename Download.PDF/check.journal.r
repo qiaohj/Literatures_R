@@ -139,8 +139,11 @@ for (i in c(1:nrow(journals))){
   article_item<-article_item[!file.exists(article_item$xml)]
   setorderv(article_item, "pdf", -1)
   article_item<-article_item[sample(nrow(article_item), nrow(article_item))]
+  if (nrow(article_item)==0){
+    next()
+  }
   for (j in c(1:nrow(article_item))){
-    print(paste(j, nrow(article_item), article_item[j]$pdf))
+    print(paste(j, nrow(article_item), article_item[j]$pdf, i, nrow(journals), journal.name))
     
     pdf<-basename(article_item[j]$pdf)
     target<-sprintf("%s/%s", target_folder, gsub("\\.PDF", "\\.XML", pdf))
@@ -273,8 +276,8 @@ for (i in c(1:nrow(journals))){
   for (j in c(start:nrow(all_articles))){
     item<-all_articles[j]
     
-    print(sprintf("%d/%d, %s, %s, %s, %s", j, nrow(all_articles), 
-                  conf.item$journal,
+    print(sprintf("%d/%d, %s (%d/%d), %s, %s, %s", j, nrow(all_articles), 
+                  conf.item$journal, i, nrow(journals),
                   item$publisher, item$resource_primary_url, item$pdf))
     
     filename<-item$pdf
@@ -450,7 +453,7 @@ for (i in c(1:nrow(journals))){
         "Springer Science and Business Media LLC",
         "Resilience Alliance, Inc.",
         "Biodiversity Heritage Library",
-        "Inter-Research Science Center",
+        
         "Pleiades Publishing Ltd",
         "Copernicus GmbH",
         "Oles Honchar Dnipropetrovsk National University",
@@ -515,7 +518,8 @@ for (i in c(1:nrow(journals))){
                            "U.S. Fish and Wildlife Service",
                            "Schweizerbart",
                            "Universidad de Costa Rica",
-                           "Penerbit Universiti Sains Malaysia")){
+                           "Penerbit Universiti Sains Malaysia",
+                           "Inter-Research Science Center")){
         no.service<-F
         next()
       }
