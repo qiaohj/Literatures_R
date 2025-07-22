@@ -9,11 +9,7 @@ library(pdftools)
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 source("Download.PDF/read_html.r")
 source("../tokens.r")
-getISSN.folder<-function(issn){
-  issn.items<-strsplit(issn, "-")[[1]]
-  return(sprintf("%s/%s-%s", issn.items[1], issn.items[1], issn.items[2]))
-}
-
+source("Download.PDF/getArticles.r")
 args = commandArgs(trailingOnly=TRUE)
 api_index<-as.numeric(args[1])
 if (is.na(api_index)){
@@ -22,64 +18,26 @@ if (is.na(api_index)){
 wiley.api<-wiley.api[api_index]
 elsevier.api<-elsevier.api[api_index]
 
-#category<-"Ecology.2025"
-#journal.name<-"GLOBAL CHANGE BIOLOGY" (DONE 2025)
-#journal.name<-"NATURE ECOLOGY AND EVOLUTION" (DONE 2025)
-#journal.name<-"METHODS IN ECOLOGY AND EVOLUTION" (DONE 2025)
-#journal.name<-"GLOBAL ECOLOGY AND BIOGEOGRAPHY" (DONE)
-#journal.name<-"ECOLOGY LETTERS" (DONE)
-#journal.name<-"ECOLOGY"
-#journal.name<-"JOURNAL OF ECOLOGY"
-#journal.name<-"OIKOS" (DONE)
-#journal.name<-"OECOLOGIA" (DONE)
-#journal.name<-"AMERICAN NATURALIST"
-#journal.name<-"THEORETICAL ECOLOGY" (DONE)
-#journal.name<-"ECOLOGICAL MODELLING" (DONE)
-#journal.name<-"ECOGRAPHY"
-#journal.name<-"FUNCTIONAL ECOLOGY" (DONE 2025)
-#journal.name<-"JOURNAL OF ANIMAL ECOLOGY"
-#journal.name<-"TRENDS IN ECOLOGY AND EVOLUTION"
-#journal.name<-"FRONTIERS IN ECOLOGY AND THE ENVIRONMENT"
-#journal.name<-"JOURNAL OF APPLIED ECOLOGY"
-#journal.conf<-fread(sprintf("../Data/JCR/Target.Journals/%s.csv", category), header=T)
-#journal.conf$journal<-toupper(journal.conf$`Journal name`)
-#journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
-#journal<-journal.conf[journal==journal.name]
+t.journal.name<-args[2]
+crossref.year<-2025
 
 
 
-if (F){
-  jcr_journals<-list.files("../Data/JCR/Target.Journals", pattern="\\.csv")
-  journals<-list()
-  for (f in jcr_journals){
-    journal.conf<-fread(sprintf("../Data/JCR/Target.Journals/%s", f), header=T)
-    journal.conf$journal<-toupper(journal.conf$`Journal name`)
-    journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
-    journals[[length(journals)+1]]<-journal.conf
-    
-    
-  }
-  journals<-rbindlist(journals, fill=T)
-  journals$Category<-NULL
-  journals<-journals[, c("ISSN", "eISSN", "journal")]
-  journals<-unique(journals)
-  journals.N<-journals[,.(N=.N), by=list(journal)]
-  journals[journal=="GLOBAL CHANGE BIOLOGY"]
-  saveRDS(journals, "../Data/JCR/Target.Journals.rda")
-}
+all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+
+i=1
 journals<-readRDS("../Data/JCR/Target.Journals.rda")
 
-crossref.year<-2025
-i=1
-journals<-journals[sample(nrow(journals), nrow(journals))]
-journal.names<-c("JOURNAL OF ECOLOGY", "ECOLOGY", "OIKOS", "OECOLOGIA",
-  "SEED SCIENCE AND TECHNOLOGY", "SEED SCIENCE RESEARCH", "JOURNAL OF SEED SCIENCE",
-  "PLANT PHYSIOLOGY", "NEW PHYTOLOGIST", "ANNALS OF BOTANY",
-  "FRONTIERS IN PLANT SCIENCE")
-journal.index<-11
-done<-c(1, 3, 4, 6)
-t.journal.name<-"METHODS IN ECOLOGY AND EVOLUTION"
-conf.item<-journals[journal==t.journal.name]
+if (is.na(t.journal.name)){
+  journals<-journals[sample(nrow(journals), nrow(journals))]
+  
+}else{
+  journals<-journals[journal==t.journal.name]
+  
+}
+
+#t.journal.name<-"SCIENCE"
+#conf.item<-journals[journal==t.journal.name]
 for (i in c(1:nrow(journals))){
   conf.item<-journals[i]
   #conf.item<-journals[journal==journal.names[journal.index]]
@@ -89,9 +47,8 @@ for (i in c(1:nrow(journals))){
   middle_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/Middle.PDF/%s", journal.name)
   if (!dir.exists(target_folder)){
     dir.create(target_folder)
-  }else{
-    #next()
   }
+  
   if (!dir.exists(middle_folder)){
     dir.create(middle_folder)
   }
@@ -100,37 +57,14 @@ for (i in c(1:nrow(journals))){
   
   
   pdf_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", conf.item$journal)
-  if (F){
-    all_journal_folders<-list.dirs(sprintf("../Data/CrossRef_By_Journal/%d/", crossref.year))
-    saveRDS(all_journal_folders, sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
-  }
-  all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
-  conf.item$ISSN_1<-toupper(ifelse(conf.item$ISSN=="", "XXXXXXXXXXXXXXXX", conf.item$ISSN))
-  conf.item$ISSN_2<-toupper(ifelse(conf.item$eISSN=="", "XXXXXXXXXXXXXXXX", conf.item$eISSN))
   
   
-  folders<-all_journal_folders[grepl(conf.item$ISSN_1, toupper(all_journal_folders)) | 
-                                 grepl(conf.item$ISSN_2, toupper(all_journal_folders))]
-  article_item<-list()
-  for (f in folders){
-    article_item[[length(article_item)+1]]<-readRDS(sprintf("%s/articles.rda", f))
-  }
-  article_item<-rbindlist(article_item)
+  article_item<-getArticles(conf.item, all_journal_folders)
+  
   if (nrow(article_item)==0){
     next()
   }
-  article_item$abstract<-NULL
-  #article_item[doi=="10.1002/ecy.2993"]
-  article_item[, c("doi.prefix", "doi.suffix") := {
-    parts <- stri_split_fixed(doi, "/", n = 2)
-    list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
-  }]
-  if (journal.name=="GLOBAL ECOLOGY AND BIOGEOGRAPHYxxxx"){
-    article_item[grepl("j.1466-8238", tolower(doi.suffix))]$doi.suffix<-
-      gsub("j.1466-8238", "j.1466-822X", article_item[grepl("j.1466-8238", tolower(doi.suffix))]$doi.suffix)
-  }
   
-  article_item<-unique(article_item)
   article_item$pdf<-sprintf("%s/%s.PDF", 
                             pdf_folder, URLencode(toupper(article_item$doi.suffix), reserved = T))
   article_item<-article_item[type=="journal-article"]
@@ -168,7 +102,7 @@ for (i in c(1:nrow(journals))){
     finally = {
       
     })
-    if (is.null(text)){
+    if (is.null(text) & file.size(article_item[j]$pdf)<1e5){
       file.rename(article_item[j]$pdf, 
                   sprintf("%s/%s", middle_folder, pdf))
       print("MOVED")
@@ -211,14 +145,7 @@ for (i in c(1:nrow(journals))){
     
     
   }
-  if (F){
-    #article_item$published
-    article_item<-article_item[!file.exists(article_item$xml)]
-    output<-article_item[, c("doi", "issue", "volume", "page", "resource_primary_url", "pdf", "title")]
-    output$pdf<-gsub(sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/", journal.names[journal.index]), "",
-                             output$pdf)
-    fwrite(output, sprintf("~/Downloads/Missing.PDF/%s.csv", journal.names[journal.index]))
-  }
+  next()
   if (journal.name %in% c("TROPICAL PLANT PATHOLOGY")){
     next()
   }
@@ -228,8 +155,7 @@ for (i in c(1:nrow(journals))){
   all_articles<-all_articles[exist==F]
   
   all_articles<-all_articles[type=="journal-article"]
-  #all_articles<-all_articles[sample(nrow(all_articles), nrow(all_articles))]
-  #all_articles<-all_articles[publisher=="JSTOR"]
+
   
   error.pdf<-sprintf("../Data/Error.PDF/%s.%d.rda", journal.name, crossref.year)
   error.df<-NULL
@@ -286,13 +212,7 @@ for (i in c(1:nrow(journals))){
     }
     publisher<-item$publisher
     if (publisher=="JSTOR"){
-      
-      #next()
-      #url<-sprintf("https://www.jstor.org/stable/pdf/%s.pdf", item$doi.suffix)
-      #download.file(url, 
-      #              destfile = filename, method="wget",
-      #              extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
-      #next()
+      next()
     }
     
     #next()
@@ -370,21 +290,22 @@ for (i in c(1:nrow(journals))){
         Sys.sleep(10)
         next()
       }
-      if (F){
-        if (publisher=="The Royal Society"){
-          #https://royalsocietypublishing.org/doi/10.1098/rspb.2020.2714
-          #https://royalsocietypublishing.org/doi/pdf/10.1098/rspb.2020.2714?download=true
-          
-          no.service<-F
-          pdf.url<-sprintf("%s?download=true", gsub("/doi/", "/doi/pdf/",  url))
-          
-          
-          download.file(pdf.url, 
-                        destfile = filename, method="wget",
-                        extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
-          next()
-        }
+      
+      if (publisher=="The Royal Society"){
+        next()
+        #https://royalsocietypublishing.org/doi/10.1098/rspb.2020.2714
+        #https://royalsocietypublishing.org/doi/pdf/10.1098/rspb.2020.2714?download=true
+        
+        no.service<-F
+        pdf.url<-sprintf("%s?download=true", gsub("/doi/", "/doi/pdf/",  url))
+        
+        
+        download.file(pdf.url, 
+                      destfile = filename, method="wget",
+                      extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
+        next()
       }
+      
       
       if (grepl("\\.plos\\.", url)){
         no.service<-F
@@ -432,21 +353,21 @@ for (i in c(1:nrow(journals))){
         next()
       }
       
-      if (F){
-        if (publisher=="Universidad Nacional Autonoma de Mexico"){
-          no.service<-F
-          webpage <- safe_read_html(url)
-          
-          pdf.url <- webpage %>%
-            html_nodes("a.obj_galley_link.PDF") %>%
-            html_attr("href")
-          
-          download.file(pdf.url, 
-                        destfile = filename, method="wget",
-                        extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
-          next()
-        }
+      if (publisher=="Universidad Nacional Autonoma de Mexico"){
+        next()
+        no.service<-F
+        webpage <- safe_read_html(url)
+        
+        pdf.url <- webpage %>%
+          html_nodes("a.obj_galley_link.PDF") %>%
+          html_attr("href")
+        
+        download.file(pdf.url, 
+                      destfile = filename, method="wget",
+                      extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
+        next()
       }
+      
       
       if (publisher %in% c(
         "FapUNIFESP (SciELO)", 
@@ -539,25 +460,6 @@ for (i in c(1:nrow(journals))){
     finally = {
       
     })
-    if (F){
-      text <- pdf_text(item$pdf)
-      file.remove(item$pdf)
-      file.size(item$pdf)
-      
-      all_articles[publisher=="Penerbit Universiti Sains Malaysia"]
-      all_articles[grepl("plos", resource_primary_url)][2]$resource_primary_url
-      url<-"https://royalsocietypublishing.org/doi/pdf/10.1098/rspb.2021.0376?download=true"
-      download.file(url, 
-                    destfile = "~/Downloads/1.pdf", method="curl",
-                    extra="-U 'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0'")
-      
-      response <- GET(url)
-      status_code(response) 
-      html_content <- content(response, as = "text")
-      
-      writeLines(html_content, "~/Downloads/1.html", useBytes = TRUE)
-      
-    }
     #downloadPDF(item$resource_primary_url, item$doi.prefix, item$doi.suffix, item$publisher, filename)
   }
   

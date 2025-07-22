@@ -31,20 +31,25 @@ if (F){
 
 categories<-list.files("../Data/JCR/Target.Journals/", pattern="\\.csv")
 categories<-gsub("\\.csv", "", categories)
-category<-"AGRONOMY.2025"
+category<-"AGRICULTURE-MULTIDISCIPLINARY.2025"
 crossref.year<-2025
 pdfs<-readRDS("../Data/full_pdf_scihub.rda")
 pdfs$DOI2<-tolower(pdfs$DOI2)
+cross_ref_folders<-readRDS(sprintf("../Data/cross_ref_folders.%d.rda", crossref.year))
+cross_ref_folders[grepl("2097-2113", cross_ref_folders)]
+
 getISSN.folder<-function(issn){
-  issn.items<-strsplit(issn, "-")[[1]]
-  return(sprintf("%s/%s-%s", issn.items[1], issn.items[1], issn.items[2]))
+  issn<-toupper(issn)
+  return(cross_ref_folders[grepl(issn, cross_ref_folders)])
 }
+all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
 
 for (category in categories){
   
   journal.conf<-fread(sprintf("../Data/JCR/Target.Journals/%s.csv", category), header=T)
   journal.conf$journal<-toupper(journal.conf$`Journal name`)
   journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
+  journal.conf$journal<-toupper(gsub("ANDAMP;", "AND", journal.conf$journal))
   
   #journals<-readRDS(sprintf("../Data/CrossRef_Full/%d/journals.rda", crossref.year))
   i=1
@@ -52,39 +57,17 @@ for (category in categories){
     conf.item<-journal.conf[i]
     target_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", conf.item$journal)
     if (dir.exists(target_folder)){
-      #next()
-    }
-    article_item1<-NULL
-    article_item2<-NULL
-    if (conf.item$ISSN!=""){
-      issnitem<-getISSN.folder(conf.item$ISSN)
-      folders<-sprintf("../Data/CrossRef_By_Journal/%d/%s", crossref.year, issnitem)
-      if (dir.exists(folders)){
-        article_item1<-readRDS(sprintf("%s/articles.rda", folders))
-        journal_item1<-readRDS(sprintf("%s/journals.rda", folders))
-      }
+      next()
     }
     
-    if (conf.item$eISSN!=""){
-      issnitem<-getISSN.folder(conf.item$eISSN)
-      folders<-sprintf("../Data/CrossRef_By_Journal/%d/%s", crossref.year, issnitem)
-      if (dir.exists(folders)){
-        article_item2<-readRDS(sprintf("%s/articles.rda", folders))
-        journal_item2<-readRDS(sprintf("%s/journals.rda", folders))
-      }
-    }
-    if (is.null(article_item1) & !is.null(article_item2)){
-      article_item<-article_item2
-      journal_item<-journal_item2
-    }
-    if (!is.null(article_item1) & is.null(article_item2)){
-      article_item<-article_item1
-      journal_item<-journal_item1
-    }
-    if (!is.null(article_item1) & !is.null(article_item2)){
-      article_item<-rbindlist(list(article_item1, article_item2))
-      journal_item<-rbindlist(list(journal_item1, journal_item2))
-    }
+    conf.item$ISSN_1<-toupper(ifelse(conf.item$ISSN=="", "XXXXXXXXXXXXXXXX", conf.item$ISSN))
+    conf.item$ISSN_2<-toupper(ifelse(conf.item$eISSN=="", "XXXXXXXXXXXXXXXX", conf.item$eISSN))
+    
+    
+    folders<-all_journal_folders[grepl(conf.item$ISSN_1, toupper(all_journal_folders)) | 
+                                   grepl(conf.item$ISSN_2, toupper(all_journal_folders))]
+    article_item<-list()
+    
     article_item$abstract<-NULL
     #article_item[doi=="10.1002/ecy.2993"]
     article_item[, c("doi.prefix", "doi.suffix") := {

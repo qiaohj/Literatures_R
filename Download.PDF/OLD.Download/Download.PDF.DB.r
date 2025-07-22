@@ -2,14 +2,17 @@ library(data.table)
 library(pdftools)
 library(stringr)
 library(stringi)
-setwd("/media/huijieqiao/WD22T_11/literatures/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
 
 categories<-list.files("../Data/JCR/Target.Journals/", pattern="\\.csv")
 categories<-gsub("\\.csv", "", categories)
 categories<-categories[categories!="Evolutionary.Biology.2025"]
 category<-"Ecology.2025"
-crossref.year<-2024
+crossref.year<-2025
+cross_ref_folders<-readRDS(sprintf("../Data/cross_ref_folders.%d.rda", crossref.year))
+
+
 getISSN.folder<-function(issn){
   issn.items<-strsplit(issn, "-")[[1]]
   return(sprintf("%s/%s-%s", issn.items[1], issn.items[1], issn.items[2]))
@@ -20,6 +23,7 @@ for (category in categories){
   journal.conf<-fread(sprintf("../Data/JCR/Target.Journals/%s.csv", category), header=T)
   journal.conf$journal<-toupper(journal.conf$`Journal name`)
   journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
+  journal.conf$journal<-toupper(gsub("ANDAMP;", "AND", journal.conf$journal))
   
   #journals<-readRDS(sprintf("../Data/CrossRef_Full/%d/journals.rda", crossref.year))
   i=1
