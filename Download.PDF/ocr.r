@@ -1,8 +1,8 @@
 library(pdftools)
 library(tesseract)
-setwd("/media/huijieqiao/WD22T_11/literatures/Script")
+setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
-journal.name<-"NEW PHYTOLOGIST"
+journal.name<-"NATURE"
 
 ocr_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/OCR.PDF/%s", journal.name)
 
@@ -14,16 +14,47 @@ pdf_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", journa
 
 pdfs<-list.files(pdf_folder, pattern = "\\.PDF")
 pdf<-pdfs[1]
-for (pdf in pdfs){
+pdfs<-pdfs[sample(length(pdfs), length(pdfs))]
+remove_symbols_keep_letters <- function(input_string) {
+  # Use gsub to replace any character that is NOT an uppercase or lowercase letter
+  # ([^A-Za-z]) with an empty string ("").
+  cleaned_string <- gsub("[^A-Za-z]", "", input_string)
+  return(cleaned_string)
+}
+
+
+
+for (i in c(1:length(pdfs))){
+  pdf<-pdfs[i]
   pdf.path<-sprintf("%s/%s", pdf_folder, pdf)
   ocr.path<-sprintf("%s/%s", ocr_folder, pdf)
-  print(pdf.path)
+  
+  if (!file.exists(pdf.path)){
+    next()
+  }
   file.size<-file.size(pdf.path)
+  if (is.na(file.size)){
+    next()
+  }
+  print(sprintf("%d/%d: %s (%d)", i, length(pdfs), pdf.path, file.size))
   if (file.size<1024){
     next()
   }
   text<-pdf_text(pdf.path)
+  text<-unlist(text)
+  text<-paste(text, collapse = '')
+  text<-gsub(" ", "", text)
+  text<-remove_symbols_keep_letters(text)
   if (sum(nchar(text))>1000){
+    next()
+  }
+  if (grepl("sorrywedonthave", tolower(text))){
+    next()
+  }
+  if (grepl("authorcorrection", tolower(text))){
+    next()
+  }
+  if (grepl("correctionsamendments", tolower(text))){
     next()
   }
   file.rename(pdf.path, ocr.path)

@@ -1,6 +1,49 @@
+cannot.download.journal.list<-c("Humboldt Field Research Institute",
+                                "Pensoft Publishers",
+                                "CSIRO Publishing",
+                                "Regional Euro-Asian Biological Invasions Centre Oy (REABIC)",
+                                "Universidad Nacional Autonoma de Mexico",
+                                "SciELO Agencia Nacional de Investigacion y Desarrollo (ANID)",
+                                "Osterreichische Akademie der Wissenschaften",
+                                "Informa UK Limited",
+                                "Southwestern Association of Naturalists",
+                                "Cambridge University Press (CUP)",
+                                "JSTOR",
+                                "O-Kratkoe Ltd",
+                                "The Royal Society",
+                                "Universidad Nacional Agraria la Molina",
+                                "University of Wisconsin Press",
+                                "Oxford University Press (OUP)",
+                                "U.S. Fish and Wildlife Service",
+                                "Schweizerbart",
+                                "Universidad de Costa Rica",
+                                "Penerbit Universiti Sains Malaysia",
+                                "Inter-Research Science Center",
+                                "JSTOR",
+                                "MDPI AG",
+                                "American Association for the Advancement of Science (AAAS)",
+                                "Proceedings of the National Academy of Sciences",
+                                "Canadian Science Publishing",
+                                "Scientific Societies")
+no_open_access<-c(
+  "American Chemical Society (ACS)",
+  "Current Science Association")
+
+html.download.journal.list<-c(
+  "FapUNIFESP (SciELO)", 
+  "Springer Science and Business Media LLC",
+  "Resilience Alliance, Inc.",
+  "Biodiversity Heritage Library",
+  "Pleiades Publishing Ltd",
+  "Copernicus GmbH",
+  "Oles Honchar Dnipropetrovsk National University",
+  "Norwegian Polar Institute",
+  "Masaryk University Press",
+  "Frontiers Media SA")
 if (F){
   all_journal_folders<-list.dirs(sprintf("../Data/CrossRef_By_Journal/%d/", crossref.year))
   saveRDS(all_journal_folders, sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+  
 }
 if (F){
   categories<-list.files("../Data/JCR/Target.Journals/", pattern="\\.csv")
@@ -19,6 +62,20 @@ if (F){
   journals.N<-journals[,.(N=.N), by=list(journal)]
   journals[journal=="GLOBAL CHANGE BIOLOGY"]
   saveRDS(journals, "../Data/JCR/Target.Journals.rda")
+  
+  all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+  for (i in c(1:nrow(journals))){
+    item<-journals[i]
+    article<-getArticles(item, all_journal_folders)
+    article$pdf<-sprintf("%s.PDF", 
+            URLencode(toupper(article$doi.suffix), reserved = T))
+    print(paste(item$journal, ":", nrow(article)))
+    target<-sprintf("../Data/Journal.Article/%d/%s.rda", crossref.year, item$journal)
+    if (file.exists(target)){
+      #next()
+    }
+    saveRDS(article, target)
+  }
 }
 getArticles<-function(conf.item, all_journal_folders){
   
@@ -32,6 +89,7 @@ getArticles<-function(conf.item, all_journal_folders){
   for (f in folders){
     article_item[[length(article_item)+1]]<-readRDS(sprintf("%s/articles.rda", f))
   }
+  
   article_item<-rbindlist(article_item)
   if (nrow(article_item)==0){
     return(article_item)
@@ -44,7 +102,8 @@ getArticles<-function(conf.item, all_journal_folders){
   }]
   article_item<-unique(article_item)
   article_item<-article_item[type=="journal-article"]
-  
+  article_item$pdf<-sprintf("%s.PDF", 
+          URLencode(toupper(article_item$doi.suffix), reserved = T))
   article_item
 }
 
