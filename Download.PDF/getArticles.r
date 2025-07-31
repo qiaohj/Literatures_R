@@ -26,6 +26,8 @@ cannot.download.journal.list<-c("Humboldt Field Research Institute",
                                 "Canadian Science Publishing",
                                 "Scientific Societies")
 no_open_access<-c(
+  "BIOLOGIA",
+  "LANDSCAPE ECOLOGY",
   "American Chemical Society (ACS)",
   "Current Science Association")
 
@@ -58,9 +60,24 @@ if (F){
   journals<-rbindlist(journals, fill=T)
   journals$Category<-NULL
   journals<-journals[, c("ISSN", "eISSN", "journal")]
+ 
+  journals[journal=="JOURNAL OF PHYCOLOGY", ISSN:="0022-3646"]
+  journals[journal=="WATER BIOLOGY AND SECURITY", ISSN:="2097-4132"]
+  journals[journal=="INTERNATIONAL JOURNAL OF SEDIMENT RESEARCH"]
+  journals[journal=="INTERNATIONAL JOURNAL OF SEDIMENT RESEARCH", eISSN:="2589-7284"]
+  
+  journals[journal=="INTERNATIONAL JOURNAL OF SEDIMENT RESEARCH"]
+  journals[journal=="INTERNATIONAL JOURNAL OF SEDIMENT RESEARCH", eISSN:="2589-7284"]
+  
+  journals[journal=="NATURAL RESOURCES FORUM"]
+  journals[journal=="NATURAL RESOURCES FORUM", ISSN:="0165-0203"]
+  
+  journals[journal=="ACTA BOTANICA MEXICANA"]
+  journals[journal=="ACTA BOTANICA MEXICANA", ISSN:="0187-7151"]
+  
   journals<-unique(journals)
   journals.N<-journals[,.(N=.N), by=list(journal)]
-  journals[journal=="GLOBAL CHANGE BIOLOGY"]
+  journals.N[N>1]
   saveRDS(journals, "../Data/JCR/Target.Journals.rda")
   
   all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
@@ -85,8 +102,14 @@ getArticles<-function(conf.item, all_journal_folders){
   
   folders<-all_journal_folders[grepl(conf.item$ISSN_1, toupper(all_journal_folders)) | 
                                  grepl(conf.item$ISSN_2, toupper(all_journal_folders))]
+  if (length(folders)==0){
+    return(0)
+  }
   article_item<-list()
   for (f in folders){
+    if (!file.exists(sprintf("%s/articles.rda", f))){
+      next()
+    }
     article_item[[length(article_item)+1]]<-readRDS(sprintf("%s/articles.rda", f))
   }
   

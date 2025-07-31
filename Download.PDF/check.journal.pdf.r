@@ -61,7 +61,7 @@ check.journal.pdf<-function(conf.item, crossref.year){
     finally = {
       
     })
-    if (is.null(text) & file.size(pdf.file)<1e5){
+    if (is.null(text) | file.size(pdf.file)<1e5){
       file.rename(pdf.file, 
                   sprintf("%s/%s", middle_folder, pdf))
       print("MOVE NULL and SMALL FILE")

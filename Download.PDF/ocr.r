@@ -28,7 +28,9 @@ for (i in c(1:length(pdfs))){
   pdf<-pdfs[i]
   pdf.path<-sprintf("%s/%s", pdf_folder, pdf)
   ocr.path<-sprintf("%s/%s", ocr_folder, pdf)
-  
+  if (grepl("news", tolower(pdf.path))){
+    next()
+  }
   if (!file.exists(pdf.path)){
     next()
   }
@@ -40,23 +42,32 @@ for (i in c(1:length(pdfs))){
   if (file.size<1024){
     next()
   }
+  #pdf.path<-"/media/huijieqiao/WD22T_11/literatures/Data/OCR.PDF/NATURE/118027E0.PDF"
+  
   text<-pdf_text(pdf.path)
   text<-unlist(text)
   text<-paste(text, collapse = '')
   text<-gsub(" ", "", text)
   text<-remove_symbols_keep_letters(text)
-  if (sum(nchar(text))>1000){
+  if (sum(nchar(text))>100){
     next()
   }
-  if (grepl("sorrywedonthave", tolower(text))){
+  skip.words<-c("sorrywedonthave", "authorcorrection", "correctionsamendments", "erratacorrigenda",
+                "naturejobs", "natureaudio", "correctionsendentsc", "picturestory", "thispagehasbeenremoved",
+                "thereisnoarticle", "snapshotfeatures")
+  skip<-F
+  for (word in skip.words){
+    if (grepl(word, tolower(text))){
+      skip<-T
+      break
+    }
+  }
+  if (skip==T){
     next()
   }
-  if (grepl("authorcorrection", tolower(text))){
-    next()
-  }
-  if (grepl("correctionsamendments", tolower(text))){
-    next()
-  }
+  
+  
+  
   file.rename(pdf.path, ocr.path)
   
   message("Step 1/3: Converting PDF to images...")

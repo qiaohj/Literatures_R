@@ -1,8 +1,11 @@
 
 
 download.pdf<-function(publisher, url, doi.prefix, doi.suffix, 
-                       wiley.api="", elsevier.api="", filename){
+                       wiley.api="", elsevier.api="", filename, journal){
   code<- -5
+  if (journal %in% no_open_access){
+    return(-6)
+  }
   if (grepl("link\\.springer-ny\\.com", url)){
     return(-2)
   }

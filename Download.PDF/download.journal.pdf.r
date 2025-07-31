@@ -33,9 +33,10 @@ download.journal.pdf<-function(conf.item, crossref.year, wiley.api, elsevier.api
     url<-item$resource_primary_url
     doi.prefix<-item$doi.prefix
     doi.suffix<-item$doi.suffix
+    journal<-conf.item$journal
     code<-
     tryCatch({
-      download.pdf(publisher, url, doi.prefix,doi.suffix, wiley.api, elsevier.api, filename)
+      download.pdf(publisher, url, doi.prefix,doi.suffix, wiley.api, elsevier.api, filename, journal)
       
     },
     error = function(e) {
