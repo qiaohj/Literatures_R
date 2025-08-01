@@ -24,7 +24,7 @@ download.journal.pdf<-function(conf.item, crossref.year, wiley.api, elsevier.api
                   conf.item$journal, i, nrow(journals),
                   item$publisher, item$resource_primary_url, item$pdf))
     
-    filename<-item$pdf
+    filename<-item$pdf.path
     if (file.exists(filename)){
       print("Exist! Skip!")
       next()
@@ -51,8 +51,11 @@ download.journal.pdf<-function(conf.item, crossref.year, wiley.api, elsevier.api
       
     })
     print(sprintf("Download stauts code: %d", code))
+    if (is.null(code)){
+      code<-0
+    }
     if (code>0){
-      Sys.sleep(10)
+      Sys.sleep(code)
     }
   }
 }

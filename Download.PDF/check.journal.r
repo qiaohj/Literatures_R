@@ -36,7 +36,7 @@ journals<-readRDS("../Data/JCR/Target.Journals.rda")
 #target.journals<-target.journals[Publisher=="FapUNIFESP (SciELO)" & Note=="Auto"]
 #journals<-journals[journal %in% target.journals$Journal_name]
 journals<-journals[sample(nrow(journals), nrow(journals))]
-#t.journal.name<-"LANDSCAPE ECOLOGY"
+#t.journal.name<-"LIFE SCIENCE ALLIANCE"
 if (is.na(t.journal.name)){
   journals<-journals[sample(nrow(journals), nrow(journals))]
   

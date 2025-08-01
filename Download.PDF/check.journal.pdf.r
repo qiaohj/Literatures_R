@@ -18,11 +18,17 @@ check.journal.pdf<-function(conf.item, crossref.year){
   if (nrow(article_item)==0){
     return(1)
   }
-  article_item$pdf<-sprintf("%s/%s.PDF", 
-                            pdf_folder, URLencode(toupper(article_item$doi.suffix), reserved = T))
-  article_item<-article_item[type=="journal-article"]
-  article_item$xml<-sprintf("%s/%s.XML", 
-                            target_folder, URLencode(toupper(article_item$doi.suffix), reserved = T))
+  article_item$pdf<-sprintf("%s.PDF", URLencode(toupper(article_item$doi.suffix), reserved = T))
+  article_item$pdf.path<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/%s", 
+                             conf.item$journal, article_item$pdf)
+  article_item$xml<-sprintf("%s.XML", URLencode(toupper(article_item$doi.suffix), reserved = T))
+  article_item$xml.path<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s/%s", 
+                             conf.item$journal,article_item$xml)
+  article_item$pdf.exist<-file.exists(article_item$pdf.path)
+  article_item$xml.exist<-file.exists(article_item$xml.path)
+  article_item$pdf.xml.elsevier.path<-gsub("GROBID.XML", "XML", article_item$xml.path)
+  article_item$pdf.xml.elsevier.exist<-file.exists(article_item$pdf.xml.elsevier.path)
+  
   article_item<-article_item[!file.exists(article_item$xml)]
   setorderv(article_item, "pdf", -1)
   article_item<-article_item[sample(nrow(article_item), nrow(article_item))]

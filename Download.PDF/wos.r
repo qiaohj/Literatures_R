@@ -3,12 +3,16 @@
 library("rwosstarter")
 library("data.table")
 library("stringi")
+library("pdftools")
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 source("Download.PDF/wos.functions.r")
 source("Download.PDF/getArticles.r")
 source("Download.PDF/download.pdf.r")
+source("Download.PDF/read_html.r")
 source("../tokens.r")
 token.index<-3
+wiley.api<-wiley.api[token.index]
+elsevier.api<-elsevier.api[token.index]
 #rwosstarter::wos_get_records()
 if (F){
   target.journals<-fread("../Data/CSC/target.journals_20250730.csv")
@@ -188,6 +192,9 @@ all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Jou
 result<-list()
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
+  if (item$Note.Qiao=="[no exist in jcr categories]"){
+    next()
+  }
   journal.folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/CSC/pdf/%s", item$Journal_name)
   if (!dir.exists(journal.folder)){
     dir.create(journal.folder)
@@ -203,6 +210,9 @@ for (i in c(1:nrow(target.journals))){
                             URLencode(toupper(articles$doi.suffix), reserved = T))
   articles<-articles[, c("uid", "journal", "doi", "pdf", "title")]
   crossref.articles<-getArticles(item, all_journal_folders)
+  if (nrow(crossref.articles)==0){
+    next()
+  }
   crossref.articles<-crossref.articles[, c("pdf", "url", "resource_primary_url", "publisher")]
   articles.crossref<-merge(articles, crossref.articles, by="pdf", all.x=T)
   articles.crossref$with.pdf<-F
@@ -215,7 +225,7 @@ for (i in c(1:nrow(target.journals))){
     pdf<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/%s", item$Journal_name, articles.crossref[j]$pdf)
     target<-sprintf("%s/%s", journal.folder, articles.crossref[j]$pdf)
     pdf.exist<-file.exists(pdf)
-    print(sprintf("J: %d/%d; A: %d/%d; %s %s, exist (%d)", 
+    print(sprintf("J: %d/%d; A: %d/%d; %s @ %s, exist (%d)", 
                   i, nrow(target.journals), 
                   j, nrow(articles.crossref), 
                   item$Journal_name, articles.crossref[j]$publisher,
@@ -227,16 +237,19 @@ for (i in c(1:nrow(target.journals))){
       articles.crossref[j, with.pdf:=T]
     }else{
       if (!is.na(articles.crossref[j]$resource_primary_url)){
+        
         publisher<-articles.crossref[j]$publisher
         url<-articles.crossref[j]$resource_primary_url
         doi.prefix<-articles.crossref[j]$doi.prefix
         doi.suffix<-articles.crossref[j]$doi.suffix
         journal<-item$Journal_name
+        
         code<-
           tryCatch({
             download.pdf(publisher, url, doi.prefix, doi.suffix, 
-                         wiley.api[token.index], elsevier.api[token.index], 
+                         wiley.api, elsevier.api, 
                          pdf, journal)
+            
             
           },
           error = function(e) {
@@ -251,8 +264,12 @@ for (i in c(1:nrow(target.journals))){
             
           })
         print(sprintf("Download stauts code: %d", code))
-        if (code>0){
+        if (is.null(code)){
+          code<-0
+        }
+        if (code>0 | code==-11){
           file.copy(pdf, journal.folder)
+          articles.crossref[j, with.pdf:=T]
           Sys.sleep(10)
         }
       }
@@ -269,3 +286,7 @@ for (i in c(1:nrow(target.journals))){
   fwrite(articles.crossref[with.pdf==F], 
          sprintf("/media/huijieqiao/WD22T_11/literatures/Data/CSC/missing.pdf/%s.csv", item$Journal_name))
 }
+result.df<-rbindlist(result)
+result.df$differ<-result.df$wos-result.df$with.pdf
+fwrite(result.df, 
+       "/media/huijieqiao/WD22T_11/literatures/Data/CSC/target.20250801.csv")

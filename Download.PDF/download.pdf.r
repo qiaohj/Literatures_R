@@ -1,7 +1,8 @@
 
 
 download.pdf<-function(publisher, url, doi.prefix, doi.suffix, 
-                       wiley.api="", elsevier.api="", filename, journal){
+                       wiley.api="", elsevier.api="", filename, 
+                       journal){
   code<- -5
   if (journal %in% no_open_access){
     return(-6)
@@ -14,20 +15,27 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
   }
   if (grepl("nature\\.com", url)){
     pdf.url <- sprintf("%s.pdf", url)
-    code<-download.pdf.url(pdf.url, url, host="nature.com", headers=NULL, filename=filename)
+    code<-download.pdf.url(pdf.url, url, host="nature.com", headers=NULL, filename=filename, 1)
     return(code)
   }
   if (publisher=="American Society for Horticultural Science"){
     #https://journals.ashs.org/view/journals/jashs/96/1/article-p42.xml
     #https://journals.ashs.org/downloadpdf/view/journals/jashs/96/1/article-p42.pdf
-    pdf.url<-"https://journals.ashs.org/hort/hort/published/rest/pdf-watermark/v1/journals/jashs/96/1/article-p42.pdf/watermark-pdf/"
+    #pdf.url<-"https://journals.ashs.org/hort/hort/published/rest/pdf-watermark/v1/journals/jashs/96/1/article-p42.pdf/watermark-pdf/"
     
-    return(-1)
-    
+    #return(-1)
+    print(publisher)
     pdf.url<-gsub("journals.ashs.org/view/journals", "journals.ashs.org/downloadpdf/view/journals", url)
     pdf.url<-gsub("\\.xml", "\\.pdf", pdf.url)
-    code<-download.pdf.url(pdf.url, url, host="ashs.org", headers=NULL, filename=filename)
-    return(code)
+    #code<-download.pdf.url(pdf.url, url, host="ashs.org", headers=NULL, filename=filename)
+    v<-download.file(pdf.url, filename)
+    print(filename)
+    if (v!=0){
+      file.remove(filename)
+      return(-12)
+    }
+    
+    return(-11)
   }
   if (publisher %in% html.download.journal.list){
     code<-download.html(url, host=NULL, filename=filename)
@@ -38,26 +46,26 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
   
   if (publisher=="PeerJ"){
     pdf.url<-sprintf("%s.pdf",url)
-    code<-download.pdf.url(pdf.url, url, host="peerj.com", headers=NULL, filename=filename)
+    code<-download.pdf.url(pdf.url, url, host="peerj.com", headers=NULL, filename=filename, sleep=1)
   }
   
   if (publisher=="MDPI AG"){
     pdf.url<-sprintf("%s/pdf", url)
-    code<-download.pdf.url(pdf.url, url, host="mdpi.com", headers=NULL, filename=filename)
+    code<-download.pdf.url(pdf.url, url, host="mdpi.com", headers=NULL, filename=filename, sleep=10)
   }
   if (endsWith(tolower(url), ".pdf")){
-    code<-download.pdf.url(url, url, host="google.com", headers=NULL, filename=filename)
+    code<-download.pdf.url(url, url, host="google.com", headers=NULL, filename=filename, , sleep=10)
   }
   if (grepl("\\.plos\\.", url)){
-    code<-download.html(url, host="plos.org", filename)
+    code<-download.html(url, host="plos.org", filename, sleep=1)
     return(-10)
   }
   if (grepl("\\.biomedcentral\\.", url)){
-    code<-download.html(url, host="biomedcentral.com", filename)
+    code<-download.html(url, host="biomedcentral.com", filename, sleep=10)
   }
   if (publisher=="Smithsonian Institution"){
     pdf.url<-gsub("/part/", "/partpdf/", url)
-    code<- download.pdf.url(pdf.url, url, host="si.edu", headers=NULL, filename=filename)
+    code<- download.pdf.url(pdf.url, url, host="si.edu", headers=NULL, filename=filename, sleep=10)
     
   }
   
@@ -83,7 +91,7 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
   return(code)
 }
 
-download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL){
+download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL, format="application/pdf", sleep=10){
   if (is.null(headers)){
     if (!is.null(host)){
     headers <- c(
@@ -122,11 +130,11 @@ download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL)
                     httr::config(proxy = ""))
   
   content_type <- resp$headers$`content-type`
-  if (httr::status_code(resp) == 200 && grepl("application/pdf", content_type, ignore.case = TRUE)) {
-    message("PDF Downloaded successfully: ", filename)
-    return(1)
+  if (httr::status_code(resp) == 200 && grepl(format, content_type, ignore.case = TRUE)) {
+    message(sprintf("%s Downloaded successfully: ", format), filename)
+    return(sleep)
   } else {
-    content.text<-content(resp)
+    content.text<-httr::content(resp)
     if (is.null(content.text)){
       content.text<-""
     }
@@ -145,17 +153,29 @@ download.wiley<-function(wiley.api, url, doi.prefix, doi.suffix, filename){
   pdf.url <- sprintf("https://api.wiley.com/onlinelibrary/tdm/v1/articles/%s/%s", doi.prefix, URLencode(doi.suffix, reserved = T))
   token <- wiley.api
   headers <- c("Wiley-TDM-Client-Token" = token)
-  download.pdf.url(pdf.url, url, host="wiley.com", headers=headers, filename=filename)
+  download.pdf.url(pdf.url, url, host="wiley.com", headers=headers, filename=filename, sleep=10)
 }
 download.elsevier<-function(elsevier.api, url, doi.prefix, doi.suffix, filename){
-  print(elsevier.api)
+  print(paste(elsevier.api, filename))
   base_url <- "https://api.elsevier.com/content/article/doi"
   pdf.url <- sprintf("%s/%s/%s", base_url, doi.prefix, URLencode(doi.suffix, reserved = T))
   headers<-c(`X-ELS-APIKey` = elsevier.api,
              `Accept` = "application/pdf")
-  download.pdf.url(pdf.url, url, host="elsevier.com", headers=headers, filename=filename)
+  
+  code<-download.pdf.url(pdf.url, url, host="elsevier.com", headers=headers, 
+                   filename=filename, format="application/pdf", sleep=1)
+  if (code==1){
+    pdf_metadata <- pdf_info(filename)
+    num_pages <- pdf_metadata$pages
+    if (num_pages==1){
+      file.remove(filename)
+      return(-8)
+    }else{
+      return(code)
+    }
+  }
 }
-download.html<-function(url, host=host, filename=filename){
+download.html<-function(url, host=host, filename=filename, sleep=10){
   webpage <- safe_read_html(url)
   if (is.null(webpage)){
     return(-6)
@@ -170,7 +190,7 @@ download.html<-function(url, host=host, filename=filename){
   if (!startsWith(pdf.url, "http")){
     pdf.url<-sprintf("%s%s", get_base_url(url), pdf.url)
   }
-  download.pdf.url(pdf.url, url, host=host, headers=NULL, filename=filename)
+  download.pdf.url(pdf.url, url, host=host, headers=NULL, filename=filename, sleep=sleep)
   
 }
 

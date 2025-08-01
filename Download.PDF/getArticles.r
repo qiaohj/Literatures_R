@@ -103,7 +103,7 @@ getArticles<-function(conf.item, all_journal_folders){
   folders<-all_journal_folders[grepl(conf.item$ISSN_1, toupper(all_journal_folders)) | 
                                  grepl(conf.item$ISSN_2, toupper(all_journal_folders))]
   if (length(folders)==0){
-    return(0)
+    return(data.table())
   }
   article_item<-list()
   for (f in folders){
