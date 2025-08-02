@@ -4,6 +4,7 @@ library("rwosstarter")
 library("data.table")
 library("stringi")
 library("pdftools")
+library("httr")
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 source("Download.PDF/wos.functions.r")
 source("Download.PDF/getArticles.r")
@@ -11,8 +12,8 @@ source("Download.PDF/download.pdf.r")
 source("Download.PDF/read_html.r")
 source("../tokens.r")
 token.index<-3
-wiley.api<-wiley.api[token.index]
-elsevier.api<-elsevier.api[token.index]
+#wiley.api<-wiley.api[token.index]
+#elsevier.api<-elsevier.api[token.index]
 #rwosstarter::wos_get_records()
 if (F){
   target.journals<-fread("../Data/CSC/target.journals_20250730.csv")
@@ -187,100 +188,118 @@ for (i in c(1:nrow(target.journals))){
 #get PDF and download links.
 crossref.year<-2025
 #WEED SCIENCE
-i=28
+i=1
+
+target.journals<-readRDS("../Data/CSC/target.journals_20250730.rda")
 all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
 result<-list()
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
   if (item$Note.Qiao=="[no exist in jcr categories]"){
-    next()
+    #next()
   }
   journal.folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/CSC/pdf/%s", item$Journal_name)
   if (!dir.exists(journal.folder)){
     dir.create(journal.folder)
+  }
+  article.file<-sprintf("../Data/CSC/wos.journals/%s.rda", item$Journal_name)
+  if (!file.exists(article.file)){
+    result.item<-data.table(journal=item$Journal_name, 
+                            wos=0, 
+                            crossref=0,
+                            with.pdf=0
+    )
   }else{
-    #next()
-  }
-  articles<-readRDS(sprintf("../Data/CSC/wos.journals/%s.rda", item$Journal_name))
-  articles[, c("doi.prefix", "doi.suffix") := {
-    parts <- stri_split_fixed(doi, "/", n = 2)
-    list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
-  }]
-  articles$pdf<-sprintf("%s.PDF", 
-                            URLencode(toupper(articles$doi.suffix), reserved = T))
-  articles<-articles[, c("uid", "journal", "doi", "pdf", "title")]
-  crossref.articles<-getArticles(item, all_journal_folders)
-  if (nrow(crossref.articles)==0){
-    next()
-  }
-  crossref.articles<-crossref.articles[, c("pdf", "url", "resource_primary_url", "publisher")]
-  articles.crossref<-merge(articles, crossref.articles, by="pdf", all.x=T)
-  articles.crossref$with.pdf<-F
-  articles.crossref[, c("doi.prefix", "doi.suffix") := {
-    parts <- stri_split_fixed(doi, "/", n = 2)
-    list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
-  }]
-  
-  for (j in c(1:nrow(articles.crossref))){
-    pdf<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/%s", item$Journal_name, articles.crossref[j]$pdf)
-    target<-sprintf("%s/%s", journal.folder, articles.crossref[j]$pdf)
-    pdf.exist<-file.exists(pdf)
-    print(sprintf("J: %d/%d; A: %d/%d; %s @ %s, exist (%d)", 
-                  i, nrow(target.journals), 
-                  j, nrow(articles.crossref), 
-                  item$Journal_name, articles.crossref[j]$publisher,
-                  pdf.exist))
-    if (pdf.exist){
-      if (!file.exists(target)){
-        file.copy(pdf, journal.folder)
-      }
-      articles.crossref[j, with.pdf:=T]
+    articles<-readRDS(article.file)
+    articles[, c("doi.prefix", "doi.suffix") := {
+      parts <- stri_split_fixed(doi, "/", n = 2)
+      list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
+    }]
+    articles$pdf<-sprintf("%s.PDF", 
+                          URLencode(toupper(articles$doi.suffix), reserved = T))
+    articles<-articles[, c("uid", "journal", "doi", "pdf", "title")]
+    crossref.articles<-getArticles(item, all_journal_folders)
+    if (nrow(crossref.articles)==0){
+      result.item<-data.table(journal=item$Journal_name, 
+                              wos=nrow(articles), 
+                              crossref=0,
+                              with.pdf=0
+      )
     }else{
-      if (!is.na(articles.crossref[j]$resource_primary_url)){
-        
-        publisher<-articles.crossref[j]$publisher
-        url<-articles.crossref[j]$resource_primary_url
-        doi.prefix<-articles.crossref[j]$doi.prefix
-        doi.suffix<-articles.crossref[j]$doi.suffix
-        journal<-item$Journal_name
-        
-        code<-
-          tryCatch({
-            download.pdf(publisher, url, doi.prefix, doi.suffix, 
-                         wiley.api, elsevier.api, 
-                         pdf, journal)
-            
-            
-          },
-          error = function(e) {
-            message("Error: ", e$message)
-            return(-7)
-          },
-          warning = function(w) {
-            message("Warning: ", w$message)
-            
-          },
-          finally = {
-            
-          })
-        print(sprintf("Download stauts code: %d", code))
-        if (is.null(code)){
-          code<-0
-        }
-        if (code>0 | code==-11){
-          file.copy(pdf, journal.folder)
+      crossref.articles<-crossref.articles[, c("pdf", "url", "resource_primary_url", "publisher")]
+      articles.crossref<-merge(articles, crossref.articles, by="pdf", all.x=T)
+      articles.crossref$with.pdf<-F
+      articles.crossref[, c("doi.prefix", "doi.suffix") := {
+        parts <- stri_split_fixed(doi, "/", n = 2)
+        list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
+      }]
+      
+      for (j in c(1:nrow(articles.crossref))){
+        pdf<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/%s", item$Journal_name, articles.crossref[j]$pdf)
+        target<-sprintf("%s/%s", journal.folder, articles.crossref[j]$pdf)
+        pdf.exist<-file.exists(pdf)
+        print(sprintf("J: %d/%d; A: %d/%d; %s @ %s, exist (%d)", 
+                      i, nrow(target.journals), 
+                      j, nrow(articles.crossref), 
+                      item$Journal_name, articles.crossref[j]$publisher,
+                      pdf.exist))
+        if (pdf.exist){
+          if (!file.exists(target)){
+            file.copy(pdf, journal.folder)
+          }
           articles.crossref[j, with.pdf:=T]
-          Sys.sleep(10)
+        }else{
+          if (!is.na(articles.crossref[j]$resource_primary_url)){
+            
+            publisher<-articles.crossref[j]$publisher
+            url<-articles.crossref[j]$resource_primary_url
+            doi.prefix<-articles.crossref[j]$doi.prefix
+            doi.suffix<-articles.crossref[j]$doi.suffix
+            journal<-item$Journal_name
+            if (publisher=="Elsevier BV"){
+              next()
+            }
+            
+            code.frame<-
+              tryCatch({
+                download.pdf(publisher, url, doi.prefix, doi.suffix, 
+                             wiley.api[1], elsevier.api[4], 
+                             pdf, journal)
+                
+                
+              },
+              error = function(e) {
+                message("Error: ", e$message)
+                next()
+              },
+              warning = function(w) {
+                message("Warning: ", w$message)
+                
+              },
+              finally = {
+                
+              })
+            print(sprintf("Download stauts code: %d", code.frame$code))
+            
+            if (code.frame$code>0){
+              file.copy(pdf, journal.folder)
+              articles.crossref[j, with.pdf:=T]
+              if (journal!="HORTSCIENCE"){
+                Sys.sleep(code.frame$sleep)
+              }
+              
+            }
+          }
         }
       }
     }
+    
+    result.item<-data.table(journal=item$Journal_name, 
+                            wos=nrow(articles), 
+                            crossref=nrow(articles.crossref[!is.na(resource_primary_url)]),
+                            with.pdf=nrow(articles.crossref[with.pdf==T])
+    )
   }
-  
-  result.item<-data.table(journal=item$Journal_name, 
-                          wos=nrow(articles), 
-                          crossref=nrow(articles.crossref[!is.na(resource_primary_url)]),
-                          with.pdf=nrow(articles.crossref[with.pdf==T])
-                          )
   print(result.item)
   result[[length(result)+1]]<-result.item
   fwrite(articles.crossref[with.pdf==F], 
@@ -289,4 +308,4 @@ for (i in c(1:nrow(target.journals))){
 result.df<-rbindlist(result)
 result.df$differ<-result.df$wos-result.df$with.pdf
 fwrite(result.df, 
-       "/media/huijieqiao/WD22T_11/literatures/Data/CSC/target.20250801.csv")
+       "/media/huijieqiao/WD22T_11/literatures/Data/CSC/target.20250802.csv")

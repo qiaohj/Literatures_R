@@ -30,11 +30,11 @@ safe_read_html <- function(url,
       httr::GET(
         url = url, 
         add_headers(`User-Agent` = user_agent),
-        timeout(timeout_seconds)
+        httr::timeout(timeout_seconds)
       )
     },
     error = function(e) {
-      message(sprintf("网络请求失败: %s\nURL: %s", e$message, url))
+      message(sprintf("Network request error %s\nURL: %s", e$message, url))
       return(NULL)
     }
   )

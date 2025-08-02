@@ -20,7 +20,7 @@ cannot.download.journal.list<-c("Humboldt Field Research Institute",
                                 "Penerbit Universiti Sains Malaysia",
                                 "Inter-Research Science Center",
                                 "JSTOR",
-                                "MDPI AG",
+                                #"MDPI AG",
                                 "American Association for the Advancement of Science (AAAS)",
                                 "Proceedings of the National Academy of Sciences",
                                 "Canadian Science Publishing",
@@ -31,17 +31,18 @@ no_open_access<-c(
   "American Chemical Society (ACS)",
   "Current Science Association")
 
-html.download.journal.list<-c(
+html.download.journal.list.type1<-c(
   "FapUNIFESP (SciELO)", 
   "Springer Science and Business Media LLC",
-  "Resilience Alliance, Inc.",
-  "Biodiversity Heritage Library",
   "Pleiades Publishing Ltd",
   "Copernicus GmbH",
   "Oles Honchar Dnipropetrovsk National University",
   "Norwegian Polar Institute",
   "Masaryk University Press",
   "Frontiers Media SA")
+html.download.journal.list.type2<-c("Resilience Alliance, Inc.",
+                                    "Biodiversity Heritage Library"
+)
 if (F){
   all_journal_folders<-list.dirs(sprintf("../Data/CrossRef_By_Journal/%d/", crossref.year))
   saveRDS(all_journal_folders, sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))

@@ -29,7 +29,7 @@ for (k in c(1:nrow(journals))){
   
   
   
-  error.df<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/Error.PDF/%s.%d.rda", journal, crossref.year)
+  error.df<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/LOG/%s.%d.rda", journal, crossref.year)
   if (!file.exists(error.df)){
     next()
   }

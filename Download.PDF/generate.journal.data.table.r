@@ -20,7 +20,7 @@ journals<-readRDS("../Data/JCR/Target.Journals.rda")
 for (i in c(1:nrow(journals))){
   conf.item<-journals[i]
   
-  articles.file<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/Error.PDF/%s.%d.rda", conf.item$journal, crossref.year)
+  articles.file<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/LOG/%s.%d.rda", conf.item$journal, crossref.year)
   #if (file.exists(articles.file)){
   if (F){
     articles<-readRDS(articles.file)
@@ -86,7 +86,13 @@ for (i in c(1:nrow(journals))){
           }
         }
       }
-      articles<-articles[pdf.exist==F | xml.exist==F]
+      #articles<-articles[pdf.exist==F | xml.exist==F]
+    }
+    remove<-articles[pdf.exist==F & xml.exist==T]
+    print(sprintf("REMOVE %d XML FILES WITHOUT PDF.", nrow(remove)))
+    if (nrow(remove)>0){
+      file.remove(remove$xml.path)
+      articles[pdf.exist==F & xml.exist==T, xml.exist:=F]
     }
     print(articles[, .(N=.N), by=list(pdf.exist, xml.exist)])
     saveRDS(articles, articles.file)
