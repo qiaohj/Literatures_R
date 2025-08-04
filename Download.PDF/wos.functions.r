@@ -2,7 +2,7 @@
 api_url<-function(){
   "https://api.clarivate.com/apis/wos-starter/v1"
 }
-get_token<-function(){
+get_token<-function(key="WOS_STARTER_KEY"){
   wos_token <- Sys.getenv(key)
   if (wos_token == "") {
     stop("Missing Web of Science API key.\n", "Please make sure you:\n", 

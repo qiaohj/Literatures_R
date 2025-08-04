@@ -18,7 +18,8 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
   }
   if (grepl("nature\\.com", url)){
     pdf.url <- sprintf("%s.pdf", url)
-    code.frame<-download.pdf.url(pdf.url, url, host="nature.com", headers=NULL, filename=filename, 1)
+    
+    code.frame<-download.pdf.url(pdf.url, url, host="nature.com", headers=NULL, filename=filename, sleep=1)
     return(code.frame)
   }
   if (publisher=="American Society for Horticultural Science"){
@@ -144,8 +145,8 @@ download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL,
                     httr::config(proxy = ""))
   
   content_type <- resp$headers$`content-type`
-  if (httr::status_code(resp) == 200 && grepl(format, content_type, ignore.case = TRUE)) {
-    message(sprintf("%s Downloaded successfully: . File size:%d KB. ", format, round(file.size(filename)/1024)), filename)
+  if (httr::status_code(resp) == 200 & grepl(format, content_type, ignore.case = TRUE)) {
+    message(sprintf("%s Downloaded successfully. File size:%d KB. ", format, round(file.size(filename)/1024)), filename)
     code.frame<- data.table(code=1, note="Downloaded successfully", sleep=sleep)
     return(code.frame)
   } else {
@@ -157,7 +158,7 @@ download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL,
       content_type<-""
     }
     message(sprintf("Download failed: HTTP %s, Content-Type=%s, Content=%s", 
-                    httr::status_code(resp), content_type, content.text))
+                    httr::status_code(resp), content_type, substr(content.text, start = 1, stop = 100)))
     unlink(filename)
     msg<-sprintf("(%d):(%s)", httr::status_code(resp), content_type)
     if (grepl("wiley", pdf.url)){
@@ -208,7 +209,7 @@ download.html<-function(url, host=host, filename=filename, sleep=10, type=1){
     webpage <- safe_read_html(url)
   }
   if (type==2){
-    webpage<-read_html(url)
+    webpage<-rvest::read_html(url)
   }
   if (is.null(webpage)){
     code.frame<- data.table(code=-6, note="null webpage", sleep=sleep)

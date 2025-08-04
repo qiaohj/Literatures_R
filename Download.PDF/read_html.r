@@ -45,15 +45,18 @@ safe_read_html <- function(url,
   
   if (status == 200) {
     html_content <- httr::content(response, as = "text", encoding = "UTF-8")
-    webpage <- tryCatch({
-      read_html(html_content)
-    }, 
-    error = function(e){
-      message(sprintf("HTML pasted failed %s\nURL: %s", e$message, url))
-      return(NULL)
-    })
-    
-    return(webpage)
+    #return(html_content)
+    #if (F){
+      webpage <- tryCatch({
+        read_html(html_content)
+      }, 
+      error = function(e){
+        message(sprintf("HTML pasted failed %s\nURL: %s", e$message, url))
+        return(NULL)
+      })
+      
+      return(webpage)
+    #}
     
   } else {
     message(sprintf("HTTP request error code %d - %s\nURL: %s", 

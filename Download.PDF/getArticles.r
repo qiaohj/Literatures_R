@@ -26,10 +26,12 @@ cannot.download.journal.list<-c("Humboldt Field Research Institute",
                                 "Canadian Science Publishing",
                                 "Scientific Societies")
 no_open_access<-c(
+  "FASEB JOURNAL",
   "BIOLOGIA",
   "LANDSCAPE ECOLOGY",
   "American Chemical Society (ACS)",
-  "Current Science Association")
+  "Current Science Association",
+  "JOURNAL OF SOIL SCIENCE AND PLANT NUTRITION")
 
 html.download.journal.list.type1<-c(
   "FapUNIFESP (SciELO)", 
