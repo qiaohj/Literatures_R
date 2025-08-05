@@ -48,6 +48,9 @@ download.journal.pdf<-function(conf.item, crossref.year, wiley.api, elsevier.api
                   conf.item$journal, i, nrow(journals),
                   item$publisher, item$resource_primary_url, item$pdf.path))
     publisher<-item$publisher
+    if (is.na(publisher)){
+      publisher<-"N/A"
+    }
     url<-item$resource_primary_url
     doi.prefix<-item$doi.prefix
     doi.suffix<-item$doi.suffix

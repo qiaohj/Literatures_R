@@ -127,6 +127,7 @@ getArticles<-function(conf.item, all_journal_folders){
     list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
   }]
   article_item<-unique(article_item)
+  #journal-article
   article_item<-article_item[type=="journal-article"]
   article_item$pdf<-sprintf("%s.PDF", 
           URLencode(toupper(article_item$doi.suffix), reserved = T))

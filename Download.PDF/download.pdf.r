@@ -2,7 +2,7 @@
 
 download.pdf<-function(publisher, url, doi.prefix, doi.suffix, 
                        wiley.api="", elsevier.api="", filename, 
-                       journal){
+                       journal, xml=F){
   code.frame<- data.table(code=-5, note="Unhandled journal", sleep=0)
   if (journal %in% no_open_access){
     code.frame<- data.table(code=-6, note="no_open_access", sleep=0)
@@ -21,6 +21,11 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
     
     code.frame<-download.pdf.url(pdf.url, url, host="nature.com", headers=NULL, filename=filename, sleep=1)
     return(code.frame)
+  }
+  if (publisher=="Academic Journals"){
+    #https://academicjournals.org/journal/AJB/article-abstract/FC29AF165663
+    #https://academicjournals.org/journal/AJB/article-full-text-pdf/FC29AF165663
+    #download.file("https://academicjournals.org/journal/AJB/article-full-text/FC29AF165663", "~/Downloads/test.pdf")
   }
   if (publisher=="American Society for Horticultural Science"){
     print(publisher)
@@ -100,7 +105,7 @@ download.pdf<-function(publisher, url, doi.prefix, doi.suffix,
     return(code.frame)
   }
   if (publisher=="Elsevier BV"){
-    code.frame<-download.elsevier(elsevier.api, url, doi.prefix, doi.suffix, filename)
+    code.frame<-download.elsevier(elsevier.api, url, doi.prefix, doi.suffix, filename, xml=xml)
     return(code.frame)
   }
   return(code.frame)
@@ -149,6 +154,7 @@ download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL,
     message(sprintf("%s Downloaded successfully. File size:%d KB. ", format, round(file.size(filename)/1024)), filename)
     code.frame<- data.table(code=1, note="Downloaded successfully", sleep=sleep)
     return(code.frame)
+    break()
   } else {
     content.text<-httr::content(resp)
     if (is.null(content.text)){
@@ -167,6 +173,7 @@ download.pdf.url<-function(pdf.url, url, host=NULL, headers=NULL, filename=NULL,
     }
     code.frame<- data.table(code=0, note=msg, sleep=sleep)
     return(code.frame)
+    break()
   }
   code.frame<- data.table(code=-1, note="Unknown status", sleep=sleep)
   return(code.frame)
@@ -179,27 +186,41 @@ download.wiley<-function(wiley.api, url, doi.prefix, doi.suffix, filename){
   code.frame<-download.pdf.url(pdf.url, url, host="wiley.com", headers=headers, filename=filename, sleep=10)
   return(code.frame)
 }
-download.elsevier<-function(elsevier.api, url, doi.prefix, doi.suffix, filename){
+download.elsevier<-function(elsevier.api, url, doi.prefix, doi.suffix, filename, xml=F){
   print(paste(elsevier.api, filename))
   base_url <- "https://api.elsevier.com/content/article/doi"
   pdf.url <- sprintf("%s/%s/%s", base_url, doi.prefix, URLencode(doi.suffix, reserved = T))
-  headers<-c(`X-ELS-APIKey` = elsevier.api,
+  if (xml==T){
+    headers<-c(`X-ELS-APIKey` = elsevier.api,
+               `Accept` = "application/xml")
+    format="application/xml"
+    filename<-gsub("/PDF/", "/XML/", filename)
+  }
+  else{
+    headers<-c(`X-ELS-APIKey` = elsevier.api,
              `Accept` = "application/pdf")
+    format="application/pdf"
+  }
   
   code.frame<-download.pdf.url(pdf.url, url, host="elsevier.com", headers=headers, 
-                   filename=filename, format="application/pdf", sleep=1)
+                   filename=filename, format, sleep=1)
   
   if (code.frame$code==1){
-    pdf_metadata <- pdf_info(filename)
-    num_pages <- pdf_metadata$pages
-    if (num_pages==1){
-      file.remove(filename)
-      code.frame$code<- -8
-      code.frame$note<-"elsevier one page"
+    if (xml==T){
       return(code.frame)
     }else{
-      return(code.frame)
+      pdf_metadata <- pdf_info(filename)
+      num_pages <- pdf_metadata$pages
+      if (num_pages==1){
+        file.remove(filename)
+        code.frame$code<- -8
+        code.frame$note<-"elsevier one page"
+        return(code.frame)
+      }else{
+        return(code.frame)
+      }
     }
+    
   }
   return(code.frame)
 }

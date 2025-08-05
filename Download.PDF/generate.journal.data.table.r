@@ -17,13 +17,16 @@ all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Jou
 
 i=6
 journals<-readRDS("../Data/JCR/Target.Journals.rda")
-for (i in c(1:nrow(journals))){
+for (i in c(851:nrow(journals))){
   conf.item<-journals[i]
   
   articles.file<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/LOG/%s.%d.rda", conf.item$journal, crossref.year)
-  #if (file.exists(articles.file)){
-  if (F){
+  if (file.exists(articles.file)){
+    #if (F){
     articles<-readRDS(articles.file)
+    if (!"pdf.path" %in% colnames(articles)){
+      articles<-getArticles(conf.item, all_journal_folders)
+    }
   }else{
     articles<-getArticles(conf.item, all_journal_folders)
   }
@@ -73,6 +76,9 @@ for (i in c(1:nrow(journals))){
         }
         
         publisher<-articles[j]$publisher
+        if (is.na(publisher)){
+          publisher<-""
+        }
         if (publisher=="Elsevier BV" & articles[j]$pdf.exist==T){
           
           num_pages <- pdf_metadata$pages

@@ -6,17 +6,15 @@ library(gemini.R)
 library(stringdist)
 library(progress)
 library(jsonlite)
-
-setwd("/media/huijieqiao/WD22T_11/literatures/Script")
-
+setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 use_condaenv("rag.literature", required = TRUE)
-
-setAPI("AIzaSyDMgLikhUT6I2rz_z0NR-jQAXtKkKhQV5I")
+#usethis::edit_r_environ()
+setAPI(Sys.getenv("gemini.key"))
 #gemini("Explain about the gemini in astrology in one line")
 
 chromadb <- import("chromadb")
 google_genai <- import("google.generativeai")
-google_genai$configure(api_key = "AIzaSyDMgLikhUT6I2rz_z0NR-jQAXtKkKhQV5I")
+google_genai$configure(api_key = )
 gen_config <- list(
   temperature = 0.2,
   max_output_tokens = 8000L
