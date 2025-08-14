@@ -2,7 +2,7 @@ library(pdftools)
 library(tesseract)
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
-journal.name<-"PLOS ONE"
+journal.name<-"HORTSCIENCE"
 
 ocr_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/OCR.PDF/%s", journal.name)
 

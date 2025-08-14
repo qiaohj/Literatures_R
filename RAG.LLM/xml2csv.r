@@ -5,7 +5,7 @@ keywords_dt$lower_alias<-trimws(gsub(" ", "", keywords_dt$lower_alias))
 
 attr.names<-c("level", "type", "status", "when", "unit", "from", "to")
 xpaths<-fread("RAG.LLM/xpath.csv")
-
+xpaths.elsivier<-fread("RAG.LLM/xpath.elsevier.csv")
 
 clean_text_from_node <- function(node, clean.head=F, type="normal",
                                  with.text=1, remove.ref=0, ns) {
@@ -19,6 +19,8 @@ clean_text_from_node <- function(node, clean.head=F, type="normal",
   }
   if (remove.ref==1){
     refs_to_remove <- xml_find_all(clone_node, ".//d1:ref", ns)
+    #refs_to_remove <- xml_find_all(clone_node, "./ce:cross-ref", ns)
+    
     if (length(refs_to_remove) > 0) xml_remove(refs_to_remove)
   }
   
@@ -57,6 +59,19 @@ clean_text_from_node <- function(node, clean.head=F, type="normal",
     text <- clean_text_from_node(clone_node, ns=ns)
     return(data.table(text=text$text, head=head_node$text))
   }
+  
+  if (type=="section"){
+    head_node <- clean_text_from_nodes(xml_find_all(node, "./ce:section-title"), ns=ns)
+    head_to_remove <- xml_find_all(clone_node, "./ce:section-title")
+    if (length(head_to_remove) > 0) xml_remove(head_to_remove)
+    head_to_remove <- xml_find_all(clone_node, "./ce:label")
+    if (length(head_to_remove) > 0) xml_remove(head_to_remove)
+    
+    
+    text <- clean_text_from_node(clone_node, ns=ns)
+    return(data.table(text=text$text, head=head_node$text))
+  }
+  
 }
 clean_text_from_nodes <- function(nodes, clean.head=F, label="", 
                                   type="normal",
@@ -83,42 +98,82 @@ xml2csv<-function(xml_file_path){
   doc <- read_xml(xml_file_path)
   ns <- xml_ns(doc)
   
-  
-  {
-    
-    i=1
-    extracted_data <- list()
-    for (i in c(1:nrow(xpaths))){
-      xpath<-xpaths[i]
-      extracted_data[[xpath$label]]<-clean_text_from_nodes(
-        xml_find_all(doc, xpath$xpath), label=xpath$label, type=xpath$type, 
-        set.attr=xpath$set.attr,
-        with.text=xpath$with.text,
-        remove.ref=xpath$remove.ref, ns=ns)
-    }
-    extracted_data<-rbindlist(extracted_data, fill=T)
-    extracted_data$word.length<-nchar(extracted_data$text)
-    #sum(extracted_data$word.length)
-    if (!("head" %in% colnames(extracted_data))){
-      extracted_data$head<-""
-      extracted_data[label=="body", head:="Body"]
-      extracted_data[label=="back", head:="Back"]
-    }
-    extracted_data[, lower_heading := tolower(head)]
-    extracted_data$lower_heading<-trimws(gsub("\\|", " ", extracted_data$lower_heading))
-    extracted_data$lower_heading<-trimws(gsub(" ", "", extracted_data$lower_heading))
-    
-    extracted_data[keywords_dt, on = .(lower_heading = lower_alias), canonical_name := i.canonical_name]
-    extracted_data[, active_section := na.locf(canonical_name, na.rm = FALSE)]
-    
-    extracted_data[is.na(active_section), active_section := "Unknown"]
-    
-    extracted_data[!label %in% c("body", "back"), active_section:=NA]
-    #View(extracted_data)
+  i=1
+  extracted_data <- list()
+  for (i in c(1:nrow(xpaths))){
+    xpath<-xpaths[i]
+    extracted_data[[xpath$label]]<-clean_text_from_nodes(
+      xml_find_all(doc, xpath$xpath), label=xpath$label, type=xpath$type, 
+      set.attr=xpath$set.attr,
+      with.text=xpath$with.text,
+      remove.ref=xpath$remove.ref, ns=ns)
   }
+  extracted_data<-rbindlist(extracted_data, fill=T)
+  extracted_data$word.length<-nchar(extracted_data$text)
+  #sum(extracted_data$word.length)
+  if (!("head" %in% colnames(extracted_data))){
+    extracted_data$head<-""
+    extracted_data[label=="body", head:="Body"]
+    extracted_data[label=="back", head:="Back"]
+  }
+  extracted_data[, lower_heading := tolower(head)]
+  extracted_data$lower_heading<-trimws(gsub("\\|", " ", extracted_data$lower_heading))
+  extracted_data$lower_heading<-trimws(gsub(" ", "", extracted_data$lower_heading))
+  
+  extracted_data[keywords_dt, on = .(lower_heading = lower_alias), canonical_name := i.canonical_name]
+  extracted_data[, active_section := na.locf(canonical_name, na.rm = FALSE)]
+  
+  extracted_data[is.na(active_section), active_section := "Unknown"]
+  
+  extracted_data[!label %in% c("body", "back"), active_section:=NA]
+  extracted_data$file.name<-gsub("\\.XML", "", basename(xml_file_path))
+  extracted_data[label=="title", active_section:="Title"]
+  extracted_data[label=="abstract", active_section:="Abstract"]
+  extracted_data
+}
+
+
+
+
+elsevier.xml2csv<-function(xml_file_path){
+  if (!file.exists(xml_file_path)){
+    return(NULL)
+  }
+  doc <- read_xml(xml_file_path)
+  ns <- xml_ns(doc)
+  i=1
+  extracted_data <- list()
+  for (i in c(1:nrow(xpaths.elsivier))){
+    xpath.elsivier<-xpaths.elsivier[i]
+    extracted_data[[xpath.elsivier$label]]<-clean_text_from_nodes(
+      xml_find_all(doc, xpath.elsivier$xpath), 
+      label=xpath.elsivier$label, type=xpath.elsivier$type, 
+      set.attr=xpath.elsivier$set.attr,
+      with.text=xpath.elsivier$with.text,
+      remove.ref=xpath.elsivier$remove.ref, ns=ns)
+  }
+  extracted_data<-rbindlist(extracted_data, fill=T)
+  extracted_data$word.length<-nchar(extracted_data$text)
+  if (!("head" %in% colnames(extracted_data))){
+    extracted_data$head<-""
+    extracted_data[label=="body_para", head:="Body"]
+    extracted_data[label=="description", head:="Body"]
+    extracted_data[label=="simple_para", head:="Body"]
+  }
+  extracted_data[, lower_heading := tolower(head)]
+  extracted_data$lower_heading<-trimws(gsub("\\|", " ", extracted_data$lower_heading))
+  extracted_data$lower_heading<-trimws(gsub(" ", "", extracted_data$lower_heading))
+  
+  extracted_data[keywords_dt, on = .(lower_heading = lower_alias), canonical_name := i.canonical_name]
+  extracted_data[, active_section := na.locf(canonical_name, na.rm = FALSE)]
+  
+  extracted_data[is.na(active_section), active_section := "Unknown"]
   
   extracted_data$file.name<-gsub("\\.XML", "", basename(xml_file_path))
   extracted_data[label=="title", active_section:="Title"]
   extracted_data[label=="abstract", active_section:="Abstract"]
   extracted_data
 }
+
+
+

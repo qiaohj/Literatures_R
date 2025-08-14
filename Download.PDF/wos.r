@@ -217,7 +217,7 @@ crossref.year<-2025
 all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
 target.journals<-readRDS("../Data/CSC/target.journals_20250730.rda")
 result<-list()
-#target.journals<-target.journals[Journal_name=="JOURNAL OF FOOD SCIENCE"]
+#target.journals<-target.journals[Journal_name=="PLANT PHYSIOLOGY"]
 i=1
 #for (i in c(1:nrow(target.journals))){
 for (i in c(1:500)){
@@ -316,7 +316,9 @@ for (i in c(1:500)){
             #next()
           }
           
-          
+          if (articles.crossref[j]$pdf=="PLPHYS%2FKIAA015.PDF"){
+            
+          }
           pdf<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s/%s", item$Journal_name, articles.crossref[j]$pdf)
           xml<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/XML/%s/%s", item$Journal_name, articles.crossref[j]$pdf)
           
@@ -334,7 +336,7 @@ for (i in c(1:500)){
               }
             }
           }else{
-            next()
+            
             if (!is.na(articles.crossref[j]$resource_primary_url)){
               
               print(sprintf("J: %d/%d; A: %d/%d; %s @ %s, exist (%d)", 
@@ -349,7 +351,7 @@ for (i in c(1:500)){
               journal<-item$Journal_name
               xml.download<-ifelse(publisher=="Elsevier BV", T, F)
               if (xml.download==T){
-                xml.dir<-xml<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/XML/%s", item$Journal_name)
+                xml.dir<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/XML/%s", item$Journal_name)
                 if (!dir.exists(xml.dir)){
                   dir.create(xml.dir)
                 }
@@ -418,4 +420,4 @@ for (i in c(1:500)){
 
 result.df<-rbindlist(result)
 fwrite(result.df, 
-       "/media/huijieqiao/WD22T_11/literatures/Data/CSC/target.20250804.csv")
+       "/media/huijieqiao/WD22T_11/literatures/Data/CSC/target.20250813.csv")

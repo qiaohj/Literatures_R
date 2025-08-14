@@ -67,7 +67,7 @@ download.journal.pdf<-function(conf.item, crossref.year, wiley.api, elsevier.api
     },
     warning = function(w) {
       message("Warning: ", w$message)
-      
+      code.frame<- data.table(code=-17, note=w$message, sleep=10)
     },
     finally = {
       
