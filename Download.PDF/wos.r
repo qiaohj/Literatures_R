@@ -217,7 +217,7 @@ crossref.year<-2025
 all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
 target.journals<-readRDS("../Data/CSC/target.journals_20250730.rda")
 result<-list()
-#target.journals<-target.journals[Journal_name=="PLANT PHYSIOLOGY"]
+#target.journals<-target.journals[Journal_name=="SEED SCIENCE AND TECHNOLOGY"]
 i=1
 #for (i in c(1:nrow(target.journals))){
 for (i in c(1:500)){

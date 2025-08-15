@@ -69,7 +69,7 @@ if (F){
   }
   
 }
-for (j in c(2:nrow(journals))){
+for (j in c(31:500)){
 #for (j in c(11)){
   journal<-journals[j]
   article.file<-sprintf("../Data/CSC/wos.journals/%s.rda", journal$Journal_name)
@@ -91,7 +91,11 @@ for (j in c(2:nrow(journals))){
   articles$elsevier.xml.path<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/XML/%s/%s", 
                              journal$Journal_name, articles$pdf)
   articles$elsevier.exist<-file.exists(articles$elsevier.xml.path)
-  
+  xml.dir<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s", 
+                   journal$Journal_name)
+  if (!dir.exists(xml.dir)){
+    dir.create(xml.dir)
+  }
   articles$xml.path<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s/%s", 
                                       journal$Journal_name, gsub("\\.PDF", "\\.XML", articles$pdf))
   articles$xml.exist<-file.exists(articles$xml.path)
@@ -119,7 +123,20 @@ for (j in c(2:nrow(journals))){
     }
     if (file.exists(pdf.path)){
       #pdf.path<-"/media/huijieqiao/WD22T_11/literatures/Data/CSC/pdf/FRONTIERS IN PLANT SCIENCE/FPLS.2019.00721.PDF"
-      text<-pdf_text(pdf.path)
+      text<-tryCatch({
+        pdf_text(pdf.path)
+      },
+      error = function(e) {
+        message("Error: ", e$message)
+        return("")
+      },
+      warning = function(w) {
+        message("Warning: ", w$message)
+        return("")
+      },
+      finally = {
+        
+      })
       text<-paste0(text, collapse = "")
       nchar<-nchar(text)
       text<-gsub(" ", "", text)
@@ -169,6 +186,7 @@ for (j in c(2:nrow(journals))){
 
 
 
+
 Sys.setenv("http_proxy"="http://127.0.0.1:7897")
 Sys.setenv("https_proxy"="http://127.0.0.1:7897")
 Sys.setenv("all_proxy"="http://127.0.0.1:7897")
@@ -188,7 +206,7 @@ py_run_string("import requests; print(requests.get('https://google.com').status_
 
 google_genai <- import("google.generativeai")
 google_genai$configure(api_key = Sys.getenv("gemini.key"))
-#google_genai$configure(api_key = "AIzaSyBHSk30PRMoWMVz1MZnmgWCKJzeQp-ZFuc")
+
 
 
 max.token<-1e5
