@@ -69,10 +69,16 @@ if (F){
   }
   
 }
-for (j in c(31:500)){
+j=43
+journals<-journals[1:500]
+journals<-journals[sample(nrow(journals), nrow(journals))]
+for (j in c(1:500)){
 #for (j in c(11)){
   journal<-journals[j]
   article.file<-sprintf("../Data/CSC/wos.journals/%s.rda", journal$Journal_name)
+  if (!file.exists(article.file)){
+    next()
+  }
   articles<-readRDS(article.file)
   articles<-articles[document_type %in% c("Article", "Data Paper", "Early Access")]
   
@@ -104,12 +110,16 @@ for (j in c(31:500)){
                          journal$Journal_name)
   if (!dir.exists(target.folder)){
     dir.create(target.folder, recursive = T)
+  }else{
+    next()
   }
   articles$csv.path<-sprintf("%s/%s", 
                             target.folder, gsub("\\.PDF", "\\.RDA", articles$pdf))
   articles$txt.path<-sprintf("%s/%s", 
                              target.folder, gsub("\\.PDF", "\\.TXT", articles$pdf))
-  
+  if (nrow(articles)==0){
+    next()
+  }
   for (i in c(1:nrow(articles))){
     print(paste(i, nrow(articles), journal$Journal_name))
     item<-articles[i]
@@ -159,6 +169,7 @@ for (j in c(31:500)){
             print("pdf.exist")
             res<-pdf2xml(pdf.path, xml.path)
             if (res!=xml.path){
+              next()
               stop("Paste PDF Error")
             }
           }

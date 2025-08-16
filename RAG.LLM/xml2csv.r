@@ -95,7 +95,22 @@ xml2csv<-function(xml_file_path){
   if (!file.exists(xml_file_path)){
     return(NULL)
   }
-  doc <- read_xml(xml_file_path)
+  doc <- tryCatch({read_xml(xml_file_path)},
+                  error = function(e) {
+                    message("Error: ", e$message)
+                    return(NA)
+                  },
+                  warning = function(w) {
+                    message("Warning: ", w$message)
+                    return(NA)
+                  },
+                  finally = {
+                    
+                  }
+  )
+  if (is.na(doc)){
+    return(NULL)
+  }
   ns <- xml_ns(doc)
   
   i=1
@@ -139,7 +154,22 @@ elsevier.xml2csv<-function(xml_file_path){
   if (!file.exists(xml_file_path)){
     return(NULL)
   }
-  doc <- read_xml(xml_file_path)
+  doc <- tryCatch({read_xml(xml_file_path)},
+                  error = function(e) {
+                    message("Error: ", e$message)
+                    return(NA)
+                  },
+                  warning = function(w) {
+                    message("Warning: ", w$message)
+                    return(NA)
+                  },
+                  finally = {
+                    
+                  }
+  )
+  if (is.na(doc)){
+    return(NULL)
+  }
   ns <- xml_ns(doc)
   i=1
   extracted_data <- list()

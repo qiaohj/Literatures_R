@@ -19,6 +19,12 @@ journal<-args[2]
 if (is.na(api.index)){
   api.index<-2
 }
+
+token_per_quest<-as.numeric(args[3])
+if (is.na(token_per_quest)){
+  token_per_quest<-150000
+}
+#journal<-"JOURNAL OF ECOLOGY"
 if (is.na(journal)){
   stop("Must specify a journal name.")
 }
@@ -67,7 +73,7 @@ gen_config <- list(
 
 
 models<-c("gemini-2.5-pro", "gemini-2.5-flash")
-mstr<-models[1]
+mstr<-models[2]
 model <- google_genai$GenerativeModel(mstr,
                                       generation_config=gen_config,
                                       safety_settings = safety_settings,
@@ -103,7 +109,7 @@ if (file.exists(log.file)){
   saveRDS(log, log.file)
 }
 max_token<-250000
-token_per_quest<-100000
+
 chat<-model$start_chat()
 
 
@@ -120,22 +126,25 @@ for (i in c(1:nrow(log))){
   query<-str_c(query, content, collapse = "\n")
   n.token<-model$count_tokens(query)
   n.token<-n.token$total_tokens
-  if (n.token>=token_per_quest){
+  if (n.token>=token_per_quest | i==nrow(log)){
     if (length(chat$history)!=0){
       total.tokens<-model$count_tokens(chat$history)
       total.tokens<-total.tokens$total_tokens
       print(sprintf("Tokens in current chat are %d.", total.tokens))
       if (total.tokens>=(max_token-token_per_quest)){
         print(sprintf("Almost reach to the upper limit tokens (%d/%d) in a thread, renew a chat.", total.tokens, max_token))
-        chat<-model$start_chat()
+        
       }
     }
-    print(sprintf("Sending request from %d to %d of %d with %d tokens.", min(index.list), max(index.list), nrow(log), n.token))
+    chat<-model$start_chat()
+    print(sprintf("Sending request from %d to %d of %d with %d tokens for %s to %s.", 
+                  min(index.list), max(index.list), nrow(log), n.token, journal, mstr))
     print(system.time({
       chat$send_message(query)
     }))
     response<-chat$history[[length(chat$history)]]
-    dt<-read_csv(response$parts[[0]]$text, col_types = cols(.default = "c"))
+    dt<-read_csv(I(response$parts[[0]]$text), col_types = cols(.default = "c"))
+    
     saveRDS(dt, sprintf("%s/%d.rda", llm.result.folder, c.merged.id))
     chat_history_r <- lapply(chat$history, function(content) {
       list(
@@ -157,3 +166,4 @@ for (i in c(1:nrow(log))){
     
   }
 }
+
