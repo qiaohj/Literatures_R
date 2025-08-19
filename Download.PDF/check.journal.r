@@ -48,13 +48,13 @@ all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Jou
 
 i=1
 journals<-readRDS("../Data/JCR/Target.Journals.rda")
-#journals[journal=="CROP SCIENCE"]
+#journals[journal=="VEGETATIO"]
 #target.journals<-fread("../Data/CSC/target.journals_20250726.csv")
 #target.journals<-target.journals[Count>500]
 #target.journals<-target.journals[Publisher=="FapUNIFESP (SciELO)" & Note=="Auto"]
 #journals<-journals[journal %in% target.journals$Journal_name]
 journals<-journals[sample(nrow(journals), nrow(journals))]
-#t.journal.name<-"AVIAN CONSERVATION AND ECOLOGY"
+#t.journal.name<-"VEGETATIO"
 if (t.journal.name=="NA"){
   journals<-journals[sample(nrow(journals), nrow(journals))]
   

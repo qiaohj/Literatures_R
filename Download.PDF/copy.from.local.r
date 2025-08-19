@@ -40,7 +40,15 @@ cross_ref_folders<-readRDS(sprintf("../Data/cross_ref_folders.%d.rda", crossref.
 cross_ref_folders[grepl("2097-2113", cross_ref_folders)]
 
 all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
-
+if (F){
+  jcr<-readRDS("/media/huijieqiao/WD22T_11/literatures/Data/JCR/journals.rda")
+  item<-jcr[Title=="HORTSCIENCE"]
+  conf.item<-data.table(journal=toupper(item$Title),
+                        ISSN=item$ISSN,
+                        eISSN=item$eISSN)
+  
+  journal.conf<-readRDS("../Data/Vegetation/vegetation.journal.rda")
+}
 for (category in categories){
   
   journal.conf<-readJournal(category)
@@ -66,13 +74,24 @@ for (category in categories){
       next()
     }
     for (j in c(1:nrow(pdf_target))){
-      print(sprintf("%d/%d, %s (%d/%d), %s", j, nrow(pdf_target), 
-                    conf.item$journal, i, nrow(journal.conf), category))
+      #print(sprintf("%d/%d, %s (%d/%d), %s", j, nrow(pdf_target), 
+      #              conf.item$journal, i, nrow(journal.conf), category))
+      
       item<-pdf_target[j]
       pdf.name<-toupper(basename(item$pdf)) 
       target.file<-sprintf("%s/%s", target_folder, pdf.name)
-      if (!file.exists(target.file)){
-        file.copy(item$pdf, target.file, overwrite=F)
+      f1<-file.size(item$pdf)
+      f2<-file.size(target.file)
+      if (is.na(f1)){
+        f1<-0
+      }
+      if (is.na(f2)){
+        f2<-0
+      }
+      if (!file.exists(target.file) | (f1!=f2)){
+        print(sprintf("%d/%d, %s", j, nrow(pdf_target), 
+                      conf.item$journal))
+        file.copy(item$pdf, target.file, overwrite=T)
       }
     }
   }

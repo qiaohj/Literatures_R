@@ -86,14 +86,16 @@ if (F){
   all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
   for (i in c(1:nrow(journals))){
     item<-journals[i]
+    target<-sprintf("../Data/Journal.Article/%d/%s.rda", crossref.year, item$journal)
+    if (file.exists(target)){
+      next()
+    }
+    
     article<-getArticles(item, all_journal_folders)
     article$pdf<-sprintf("%s.PDF", 
             URLencode(toupper(article$doi.suffix), reserved = T))
     print(paste(item$journal, ":", nrow(article)))
-    target<-sprintf("../Data/Journal.Article/%d/%s.rda", crossref.year, item$journal)
-    if (file.exists(target)){
-      #next()
-    }
+    
     saveRDS(article, target)
   }
 }

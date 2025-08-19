@@ -2,14 +2,14 @@ library(pdftools)
 library(tesseract)
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
-journal.name<-"HORTSCIENCE"
+journal.name<-"NATURE"
 
 ocr_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/OCR.PDF/%s", journal.name)
 
 if (!dir.exists(ocr_folder)){
   dir.create(ocr_folder)
 }
-
+temp.folder<-"/media/huijieqiao/WD22T_11/literatures/Data/TEMP"
 pdf_folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", journal.name)
 
 pdfs<-list.files(pdf_folder, pattern = "\\.PDF")
@@ -71,7 +71,12 @@ for (i in c(1:length(pdfs))){
   file.rename(pdf.path, ocr.path)
   
   message("Step 1/3: Converting PDF to images...")
-  images <- pdftools::pdf_convert(ocr.path, dpi = 300)
+  output_file_template <- file.path(temp.folder, "%s.page%04d.png")
+  
+  xx<-basename(ocr.path)
+  pages <- pdftools::pdf_info(ocr.path)$pages
+  output_filenames <- sprintf(output_file_template, xx, 1:pages)
+  images <- pdftools::pdf_convert(ocr.path, dpi = 300, filenames=output_filenames)
   message(paste("Successfully converted", length(images), "pages."))
   
   # 4. 循环调用命令行工具生成单页可搜索PDF
