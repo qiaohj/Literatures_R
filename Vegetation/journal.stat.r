@@ -26,3 +26,6 @@ for (i in c(1:nrow(journals))){
                    with.xml=nrow(articles[xml.exist==T]))
   all.info[[i]]<-item
 }
+
+all.info<-rbindlist(all.info)
+fwrite(all.info, "../Data/Vegetation/journal.stat.csv")
