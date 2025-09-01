@@ -102,4 +102,5 @@ library(jsonlite)
 parsed_data <- fromJSON(gsub("json", "", gsub("`", "", extracted_text)))
 parsed_data$Method
 parsed_data$Result
-
+parsed_data$Figure
+parsed_data$Table

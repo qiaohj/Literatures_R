@@ -3,6 +3,7 @@
 download.pdf<-function(publisher, url, doi.prefix, doi.suffix, 
                        wiley.api="", elsevier.api="", filename, 
                        journal, xml=F){
+  
   code.frame<- data.table(code=-5, note="Unhandled journal", sleep=0)
   if (journal %in% no_open_access){
     code.frame<- data.table(code=-6, note="no_open_access", sleep=0)

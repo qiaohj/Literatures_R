@@ -41,7 +41,7 @@ html.download.journal.list.type1<-c(
   "Oles Honchar Dnipropetrovsk National University",
   "Norwegian Polar Institute",
   "Masaryk University Press",
-  "Frontiers Media SA")
+  "Frontiers Media SA", "Brill")
 html.download.journal.list.type2<-c("Resilience Alliance, Inc.",
                                     "Biodiversity Heritage Library"
 )
