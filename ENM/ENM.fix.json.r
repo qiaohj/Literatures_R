@@ -30,10 +30,10 @@ for (i in c(1:nrow(target.journals))){
     txt.file<-sprintf("%s/%s.txt.rda", target, display_name)
     json.file<-sprintf("%s/%s.json.rda", target, display_name)
     if (file.exists(txt.file) & !file.exists(raw.file)){
-      stop("Error 1")
+      #stop("Error 1")
     }
     if (!file.exists(txt.file) & file.exists(raw.file)){
-      stop("Error 2")
+      next()
     }
     if (!file.exists(raw.file)){
       next()
@@ -46,14 +46,19 @@ for (i in c(1:nrow(target.journals))){
     }
     if (file.exists(txt.file) & !file.exists(json.file)){
       json.file.text<-gsub("\\.rda", "", json.file)
+      json.file.text<-gsub("LLM.Parse", "LLM.Parse.JSON", json.file.text)
+      json.dir<-dirname(json.file.text)
+      if (!dir.exists(json.dir)){
+        dir.create(json.dir, recursive = T)
+      }
       if (file.exists(json.file.text)){
-        json.text<-read_file(json.file.text)
+        #json.text<-read_file(json.file.text)
       }else{
         json.text<-readRDS(txt.file)
         json.text<-gsub("json", "", gsub("`", "", json.text))
         write_file(json.text, json.file.text)
       }
-      
+      next()
       print(json.file.text)
       parsed_data <- fromJSON(gsub("json", "", gsub("`", "", json.text)))
       saveRDS(parsed_data, json.file)

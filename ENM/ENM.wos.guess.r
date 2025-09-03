@@ -20,7 +20,7 @@ source("../tokens.r")
 crossref.year<-2025
 
 journals<-readRDS("../Data/ENM/clean.journal.rda")
-#journals<-journals[Title=="AMERICAN JOURNAL OF TROPICAL MEDICINE AND HYGIENE"]
+journals<-journals[Title=="NATUREZA AND CONSERVACAO"]
 k=1
 for (k in c(1:nrow(journals))){
   print(k)
@@ -28,6 +28,9 @@ for (k in c(1:nrow(journals))){
   all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
   missing.file<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/ENM/missing.pdf/%s.csv", journal)
   if (!file.exists(missing.file)){
+    next()
+  }
+  if (file.size(missing.file)==44){
     next()
   }
   articles<-fread(missing.file)

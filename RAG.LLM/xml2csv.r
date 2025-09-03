@@ -98,11 +98,11 @@ xml2csv<-function(xml_file_path){
   doc <- tryCatch({read_xml(xml_file_path)},
                   error = function(e) {
                     message("Error: ", e$message)
-                    return(NA)
+                    return(NULL)
                   },
                   warning = function(w) {
                     message("Warning: ", w$message)
-                    return(NA)
+                    return(NULL)
                   },
                   finally = {
                     
@@ -157,11 +157,11 @@ elsevier.xml2csv<-function(xml_file_path){
   doc <- tryCatch({read_xml(xml_file_path)},
                   error = function(e) {
                     message("Error: ", e$message)
-                    return(NA)
+                    return(NULL)
                   },
                   warning = function(w) {
                     message("Warning: ", w$message)
-                    return(NA)
+                    return(NULL)
                   },
                   finally = {
                     

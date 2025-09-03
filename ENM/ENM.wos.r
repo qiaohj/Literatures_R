@@ -27,6 +27,10 @@ if (F){
   journals<-fread("../Data/ENM/ENM.csv")
   colnames(journals)<-c("Title", "Count")
   journals$in.jcr<-T
+  journals$Title<-toupper(journals$Title)
+  journals$Title<-gsub("&", "AND", journals$Title)
+  journals$Title<-toupper(gsub("ANDAMP;", "AND", journals$Title))
+  
   journals[!Title %in% jcr$Title, in.jcr:=F]
   #fwrite(journals[in.jcr==F], "../Data/ENM/correct.csv")
   
@@ -53,6 +57,9 @@ if (F){
   journals$eISSN<-""
   journals$Title<-toupper(journals$Title)
   i=1
+  jcr[grepl("natureza", tolower(Title))]
+  journals[grepl("natureza", tolower(Title))]
+  
   for (i in c(1:nrow(journals))){
     item<-jcr[Title==journals[i]$Title]
     
@@ -237,7 +244,9 @@ no.oa<-c("INTERNATIONAL JOURNAL OF GEOGRAPHICAL INFORMATION SCIENCE", "MARINE EC
          "LANDSCAPE ECOLOGY", "TRANSACTIONS OF THE AMERICAN FISHERIES SOCIETY","STUDIES ON NEOTROPICAL FAUNA AND ENVIRONMENT",
          "ZOOTAXA", "WILDLIFE RESEARCH", "ECOLOGICAL APPLICATIONS", "JOURNAL OF MAMMALOGY",
          "SYSTEMATICS AND BIODIVERSITY", "BIOLOGIA", "AMPHIBIA-REPTILIA", "PLANT BIOSYSTEMS",
-         "JOURNAL OF EVOLUTIONARY BIOLOGY", "AUSTRALIAN JOURNAL OF BOTANY")
+         "JOURNAL OF EVOLUTIONARY BIOLOGY", "AUSTRALIAN JOURNAL OF BOTANY",
+         "AQUATIC INVASIONS", "PLANT ECOLOGY AND DIVERSITY")
+no.oa<-c()
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
   missing.file<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/ENM/missing.pdf/%s.csv", item$Title)
@@ -352,6 +361,7 @@ for (i in c(1:nrow(target.journals))){
           if (pdf.exist | xml.exist){
             if (!file.exists(target)){
               if (pdf.exist){
+                #file.remove(pdf)
                 file.copy(pdf, journal.folder)
               }
               if (xml.exist){

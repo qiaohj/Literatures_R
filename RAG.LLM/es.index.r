@@ -48,6 +48,18 @@ journals<-journals[sample(nrow(journals), nrow(journals))]
 k=1
 for (k in c(1:nrow(journals))){
   journal<-journals[k]$journal
+  if (F){
+    tryCatch({
+      conn <- connect(host = es_host, port = es_port)
+      print(conn)
+    }, error = function(e) {
+      stop("Can't connect to Elasticsearch.")
+    })
+    
+    es_index_name<-tolower(gsub(" ", "_", journal))
+    remove_es_index(conn, es_index_name)
+    next()
+  }
   journal_folder_path <- sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", journal)
   journal_xml_path <- sprintf("/media/huijieqiao/WD22T_11/literatures/Data/GROBID.XML/%s", journal)
   if (!dir.exists(journal_xml_path)){
@@ -102,6 +114,9 @@ for (k in c(1:nrow(journals))){
       next()
     }
     csv<-xml2csv(xml)
+    if (is.null(csv)){
+      next()
+    }
     if (nrow(csv)==0){
       next()
     }
@@ -135,6 +150,9 @@ for (k in c(1:nrow(journals))){
       }
       
       csv<-elsevier.xml2csv(els_xml)
+      if (is.null(csv)){
+        next()
+      }
       if (nrow(csv)==0){
         next()
       }
@@ -172,13 +190,14 @@ for (k in c(1:nrow(journals))){
   }, error = function(e) {
     stop("Can't connect to Elasticsearch.")
   })
-  es_index_name<-tolower(gsub(" ", "_", journal))
-  create_es_index(conn, es_index_name)
+  #es_index_name<-tolower(gsub(" ", "_", journal))
+  #remove_es_index(conn, es_index_name)
+  #add_es_index(conn, "full_journals")
   
   
   
   if (length(bulk_df) > 0) {
-    res <- docs_bulk(conn, x = bulk_df, index = es_index_name)
+    res <- docs_bulk(conn, x = bulk_df, index = "full_journals")
   }
 }
 
