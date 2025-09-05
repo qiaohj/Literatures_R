@@ -399,6 +399,7 @@ for (i in c(1:nrow(target.journals))){
                 },
                 error = function(e) {
                   message("Error: ", e$message)
+                  file.remove(pdf)
                   return(data.table(code=-1, note=e$message, sleep=10))
                 },
                 warning = function(w) {

@@ -29,8 +29,28 @@ for (i in c(1:nrow(target.journals))){
     raw.file<-sprintf("%s/%s.raw.rda", target, display_name)
     txt.file<-sprintf("%s/%s.txt.rda", target, display_name)
     json.file<-sprintf("%s/%s.json.rda", target, display_name)
+    json.file.text<-gsub("\\.rda", "", json.file)
+    json.file.text<-gsub("LLM.Parse", "LLM.Parse.JSON", json.file.text)
+    
     if (file.exists(txt.file) & !file.exists(raw.file)){
       #stop("Error 1")
+    }
+    if (file.exists(json.file.text)){
+      status<-tryCatch({
+        parsed_data <- fromJSON(json.file.text)
+        saveRDS(parsed_data, json.file)
+        "DONE"
+      },
+      error = function(e) {
+        print(json.file.text)
+        message("Error: ", e$message)
+        return("Error")
+      })
+      if (status=="DONE"){
+        file.remove(json.file.text)
+      }
+      
+      
     }
     if (!file.exists(txt.file) & file.exists(raw.file)){
       next()
@@ -45,8 +65,7 @@ for (i in c(1:nrow(target.journals))){
       #file.remove(json.file)
     }
     if (file.exists(txt.file) & !file.exists(json.file)){
-      json.file.text<-gsub("\\.rda", "", json.file)
-      json.file.text<-gsub("LLM.Parse", "LLM.Parse.JSON", json.file.text)
+      
       json.dir<-dirname(json.file.text)
       if (!dir.exists(json.dir)){
         dir.create(json.dir, recursive = T)
@@ -64,27 +83,6 @@ for (i in c(1:nrow(target.journals))){
       saveRDS(parsed_data, json.file)
     }
     next()
-    pdf.txt<-tryCatch({pdf_text(pdf_path)},
-                      error = function(e) {
-                        message("Error: ", e$message)
-                        return(NULL)
-                      })
-    if (is.null(pdf.txt)){
-      xml_doc <- read_xml(pdf_path)
-      
-      text_nodes <- xml_find_all(xml_doc, "//*")
-      all_text_content <- xml_text(text_nodes)
-      
-      pdf.txt <- str_c(all_text_content, collapse = "\n")
-    }
-    nchar.raw.text<-nchar(pdf.txt)
-    nchar.llm.text<-nchar(readRDS(txt.file))
-    n.item<-data.table(nchar.raw.text,
-                     nchar.llm.text,
-                     pdf_path=pdf_path,
-                     txt.file=txt.file,
-                     json.file=json.file,
-                     raw.file=raw.file)
-    result[[length(result)+1]]<-n.item
+    
   }
 }

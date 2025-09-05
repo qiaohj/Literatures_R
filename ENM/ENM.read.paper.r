@@ -52,6 +52,7 @@ gen_config <- list(
   max_output_tokens = 100000L
 )
 
+
 models<-c("gemini-2.5-pro", "gemini-2.5-flash")
 mstr<-models[2]
 clean_text <- function(text) {
@@ -67,7 +68,7 @@ clean_text <- function(text) {
 }
 
 
-prompt<-read_file("../Data/PROMPT/read.paper.md")
+prompt<-read_file("LLM.API/PROMPT/read.paper.md")
 
 model <- google_genai$GenerativeModel(mstr,
                                       generation_config=gen_config,
@@ -99,17 +100,21 @@ for (i in c(1:nrow(target.journals))){
     display_name<-gsub("\\.PDF", "", basename(pdf_path))
     target.file<-sprintf("%s/%s.raw.rda", target, display_name)
     json.file<-gsub(".raw.rda", ".json", gsub("LLM.Parse", "LLM.Parse.JSON", target.file))
+    
+    if (file.exists(json.file)){
+      next()
+    }
+    
     if (file.exists(target.file)){
       if (file.size(target.file)<100){
+        #print(pdf_path)
+        
         #file.remove(target.file)
       }
       next()
     }
     #next()
     
-    if (file.exists(json.file)){
-      next()
-    }
     print(pdf_path)
     
     saveRDS(NULL, target.file)
@@ -158,7 +163,7 @@ for (i in c(1:nrow(target.journals))){
           upload.path<-pdf_path
           type<-"PDF"
           
-          if (F){
+          if (T){
             text_content <- pdf_text(pdf_path)
             all_text_info<-str_c(text_content, collapse = "\n")
             all_text_info<-clean_text(all_text_info)
@@ -223,6 +228,11 @@ for (i in c(1:nrow(target.journals))){
       if (grepl("429", e$message, ignore.case = TRUE) || grepl("exceeded your current quota", e$message, ignore.case = TRUE)){
         file.remove(target.file)
         stop("no quota");
+      }
+      if (grepl("he document has no pages", e$message)){
+        file.remove(pdf_path)
+        file.remove(xml_path)
+        file.remove(target.file)
       }
     },
     warning = function(w) {
