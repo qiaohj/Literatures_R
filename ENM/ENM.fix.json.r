@@ -32,7 +32,8 @@ for (i in c(1:nrow(target.journals))){
     json.file.text<-gsub("\\.rda", "", json.file)
     json.file.text<-gsub("LLM.Parse", "LLM.Parse.JSON", json.file.text)
     
-    if (file.exists(txt.file) & !file.exists(raw.file)){
+    if (!file.exists(txt.file) & file.exists(raw.file)){
+      file.remove(raw.file)
       #stop("Error 1")
     }
     if (file.exists(json.file.text)){

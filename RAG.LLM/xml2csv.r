@@ -108,6 +108,9 @@ xml2csv<-function(xml_file_path){
                     
                   }
   )
+  if (is.null(doc)){
+    return(NULL)
+  }
   if (is.na(doc)){
     return(NULL)
   }

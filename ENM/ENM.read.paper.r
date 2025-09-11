@@ -13,14 +13,8 @@ library(jsonlite)
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
-args = commandArgs(trailingOnly=TRUE)
-api.index<-as.numeric(args[1])
-if (is.na(api.index)){
-  api.index<-97
-}
 
 apis<-fread("../gemini.keys")
-gemini.key<-apis[api.index]$gemini.api
 
 Sys.setenv("http_proxy"="http://127.0.0.1:7897")
 Sys.setenv("https_proxy"="http://127.0.0.1:7897")
@@ -37,7 +31,6 @@ if (F){
 use_condaenv("rag.literature", required = TRUE)
 
 google_genai <- import("google.generativeai")
-google_genai$configure(api_key = gemini.key)
 
 safety_settings <- list(
   dict(category = "HARM_CATEGORY_HARASSMENT", threshold = "BLOCK_NONE"),
@@ -68,12 +61,7 @@ clean_text <- function(text) {
 }
 
 
-prompt<-read_file("LLM.API/PROMPT/read.paper.md")
-
-model <- google_genai$GenerativeModel(mstr,
-                                      generation_config=gen_config,
-                                      safety_settings = safety_settings,
-                                      system_instruction = prompt)
+system_instruction<-read_file("LLM.API/PROMPT/read.paper.md")
 
 target.journals<-readRDS("../Data/ENM/clean.journal.rda")
 target.journals<-target.journals[sample(nrow(target.journals), nrow(target.journals))]
@@ -100,14 +88,18 @@ for (i in c(1:nrow(target.journals))){
     display_name<-gsub("\\.PDF", "", basename(pdf_path))
     target.file<-sprintf("%s/%s.raw.rda", target, display_name)
     json.file<-gsub(".raw.rda", ".json", gsub("LLM.Parse", "LLM.Parse.JSON", target.file))
-    
+    json.rda.file<-sprintf("%s/%s.json.rda", target, display_name)
     if (file.exists(json.file)){
+      next()
+    }
+    if (file.exists(json.rda.file)){
       next()
     }
     
     if (file.exists(target.file)){
-      if (file.size(target.file)<100){
-        #print(pdf_path)
+      if (file.size(target.file)<1000){
+        print(pdf_path)
+        
         
         #file.remove(target.file)
       }
@@ -165,6 +157,7 @@ for (i in c(1:nrow(target.journals))){
           
           if (T){
             text_content <- pdf_text(pdf_path)
+            #adsf
             all_text_info<-str_c(text_content, collapse = "\n")
             all_text_info<-clean_text(all_text_info)
             upload.path<-NULL
@@ -195,9 +188,18 @@ for (i in c(1:nrow(target.journals))){
       next()
     }
     
-    print(sprintf("%d/%d %d/%d: api.index: %d, %s %s type: %s", i, nrow(target.journals),
-                  j, length(pdfs), api.index, item$Title, display_name, type))
+    
     tryCatch({
+      api.index <- sample(1:nrow(apis), 1)
+      gemini.key<-apis[api.index]$gemini.api
+      google_genai$configure(api_key = gemini.key)
+      model <- google_genai$GenerativeModel(mstr,
+                                            generation_config=gen_config,
+                                            safety_settings = safety_settings,
+                                            system_instruction = system_instruction)
+      
+      print(sprintf("%d/%d %d/%d: api.index: %d, %s %s type: %s", i, nrow(target.journals),
+                    j, length(pdfs), api.index, item$Title, display_name, type))
       if (!is.null(upload.path)){
         uploaded_file <- google_genai$upload_file(path = upload.path, 
                                                   display_name = display_name)
@@ -209,6 +211,8 @@ for (i in c(1:nrow(target.journals))){
       }else{
         print(system.time({
           message(sprintf("2. Generating content with Gemini (%s)...", mstr))
+          write_file(all_text_info, sprintf("~/Downloads/%s.txt", display_name))
+          next()
           response <- model$generate_content(all_text_info)
         }))
       }
@@ -221,13 +225,18 @@ for (i in c(1:nrow(target.journals))){
       saveRDS(extracted_text, sprintf("%s/%s.txt.rda", target, display_name))
       write_file(extracted_text, sprintf("%s/%s.json", target, display_name))
       parsed_data <- fromJSON(gsub("json", "", gsub("`", "", extracted_text)))
-      saveRDS(parsed_data, sprintf("%s/%s.json.rda", target, display_name))
+      saveRDS(parsed_data, json.rda.file)
     },
     error = function(e) {
       message("Error: ", e$message)
+      
       if (grepl("429", e$message, ignore.case = TRUE) || grepl("exceeded your current quota", e$message, ignore.case = TRUE)){
+        apis<<-apis[-api.index]
+        print(sprintf("remove api index %d from apis, %d api.keys left.", api.index, nrow(apis)))
         file.remove(target.file)
-        stop("no quota");
+        if (nrow(apis)==0){
+          stop("no api left. stop");
+        }
       }
       if (grepl("he document has no pages", e$message)){
         file.remove(pdf_path)

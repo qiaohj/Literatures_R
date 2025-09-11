@@ -102,11 +102,11 @@ for (i in c(1:nrow(target.journals))){
       if (file.size(target.file)<100){
         #print(pdf_path)
         
-        #file.remove(target.file)
+        file.remove(target.file)
       }
       next()
     }
-    #next()
+    next()
     saveRDS(NULL, target.file)
     json<-readRDS(json.file)
     json.pack<-list("DOI"=display_name,
@@ -122,7 +122,7 @@ for (i in c(1:nrow(target.journals))){
     )
     json.pack<-toJSON(json.pack)
     tryCatch({
-      api.index<-random_integer <- sample(1:nrow(apis), 1)
+      api.index <- sample(1:nrow(apis), 1)
       print(sprintf("%d/%d %d/%d: api.index: %d, %s %s", i, nrow(target.journals),
                     j, length(pdfs), api.index, item$Title, display_name))
       gemini.key<-apis[api.index]$gemini.api
@@ -169,3 +169,4 @@ for (i in c(1:nrow(target.journals))){
     
   }
 }
+print("DONE!!!!!")
