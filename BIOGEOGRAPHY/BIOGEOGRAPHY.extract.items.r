@@ -63,8 +63,8 @@ clean_text <- function(text) {
 }
 
 
-#system_instruction<-read_file("LLM.API/PROMPT/read.paper.md")
-system_instruction<-read_file("LLM.API/PROMPT/read.paper.no.table.figure.md")
+
+system_instruction<-read_file("BIOGEOGRAPHY/extract.info.prompt.md")
 
 target.journals<-data.table(Title=c("ECOGRAPHY", "DIVERSITY AND DISTRIBUTIONS", 
                                     "GLOBAL ECOLOGY AND BIOGEOGRAPHY", "JOURNAL OF BIOGEOGRAPHY"))
@@ -72,7 +72,7 @@ i=1
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
   folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", item$Title)
-  target<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/LLM.Parse/%s", item$Title)
+  target<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
   if (dir.exists(target)){
     #next()
   }else{
@@ -97,7 +97,11 @@ for (i in c(1:nrow(target.journals))){
     if (file.exists(json.rda.file)){
       next()
     }
-    
+    if (!file.exists(json.rda.file) & file.exists(target.file)){
+      #print(target.file)
+      #file.remove(target.file)
+      #next()
+    }
     if (file.exists(target.file)){
       if (file.size(target.file)<1000){
         #print(pdf_path)
@@ -228,7 +232,7 @@ for (i in c(1:nrow(target.journals))){
       saveRDS(extracted_text, sprintf("%s/%s.txt.rda", target, display_name))
       write_file(extracted_text, sprintf("%s/%s.json", target, display_name))
       parsed_data <- fromJSON(gsub("json", "", gsub("`", "", extracted_text)))
-      parsed_data$Introduction
+      #parsed_data$Introduction
       saveRDS(parsed_data, json.rda.file)
     },
     error = function(e) {

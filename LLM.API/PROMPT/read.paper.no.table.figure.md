@@ -56,58 +56,15 @@ You must populate the following JSON structure. If a section is not present in t
   "Method": "String",
   "Result": "String",
   "Discussion": "String",
-  "Conclusion": "String",
-  "Acknowledgement": "String",
-  "Reference": "String",
-  "Others": [
-    {
-      "key1": "String (Content for the first uncategorized section)",
-      "key2": "String (Content for the second...)"
-    }
-  ],
-  "content_statistics_csv": "String (A single string in CSV format containing stats for each section. Example: 'Section,word_count,token_count,char_count\\nTitle,12,3,65\\nAbstract,150,38,800...')",
-  "extracted_text_stats": [
-    {
-      "word_count": "Integer (Stats for the initial raw text from pre-processing)",
-      "token_count": "Integer",
-      "char_count": "Integer"
-    }
-  ],
-  "json_content_total_stats": [
-    {
-      "word_count": "Integer (Sum of word_count from the CSV above)",
-      "token_count": "Integer (Sum of token_count from the CSV)",
-      "char_count": "Integer (Sum of char_count from the CSV)"
-    }
-  ]
+  "Conclusion": "String"
 }
 
 ## Skills
 
 ### Skill 1: Populate JSON Fields and Generate Statistics CSV
 
-1.  **Extract Content:** Using the complete, **correctly linearized text** text from the **Input Processing Strategy** step, extract the content for each section: `Title`, `Author`, `Keyword`, `Abstract`, `Introduction`, `Method`, `Result`, `Discussion`, `Conclusion`, `Acknowledgement`, `Reference`. Populate these top-level keys with their corresponding string content. If a section is not found, its value must be `null`.
-
-2.  **Handle `Others` Section:** Identify any remaining sections with clear headings that don't fit standard categories. Populate the `Others` object using these headings as keys and their content as values. If no such sections exist, the `Others` field should be `null`.
-
-3.  **Calculate Individual Statistics:** As you extract the content for each section, simultaneously calculate its statistics:
-    -   `char_count`: The total number of characters.
-    -   `word_count`: The total number of words (separated by spaces).
-    -   `token_count`: An estimation of tokens using the heuristic: `round(char_count / 4)`.
-    -   For `Others`, calculate these stats as an aggregate of all its child values.
-
-4.  **Assemble `content_statistics_csv`:** Create a single string in strict CSV format.
-    -   Start with the header row: `Section,word_count,token_count,char_count\n`.
-    -   For each section (`Title`, `Abstract`, `Others`, etc.) that has content, add a new row to the string (e.g., `Title,12,3,65\n`).
-    -   Populate the `content_statistics_csv` field with this final CSV string.
-
-5.  **Populate `extracted_text_stats`:** Take the **initial, complete raw text** generated in the pre-processing step. Calculate its total `word_count`, `token_count`, and `char_count`. Populate the `extracted_text_stats` object with these three values.
-
-6.  **Populate `json_content_total_stats`:** Sum the values from the `content_statistics_csv` you just created.
-    -   Sum the entire `word_count` column to get the total word count.
-    -   Sum the entire `token_count` column.
-    -   Sum the entire `char_count` column.
-    -   Populate the `json_content_total_stats` object with these three sums.
+1.  **Extract Content:** Using the complete, **correctly linearized text** text from the **Input Processing Strategy** step, extract the content for each section: `Title`, `Author`, `Keyword`, `Abstract`, `Introduction`, `Method`, `Result`, `Discussion`, `Conclusion`. Populate these top-level keys with their corresponding string content. If a section is not found, its value must be `null`.
+2.  **Formula:** Skip the formula and do not process it
 
 ## Constraints & Validation
 
@@ -117,5 +74,3 @@ You must populate the following JSON structure. If a section is not present in t
 -   **JSON Syntax Purity:**
     -   Ensure all strings are properly escaped (e.g., `"` becomes `\"`, `\` becomes `\\`, newlines become `\n`).
     -   **DO NOT** use trailing commas.
--   **Language:** Respond in the language used in the input.
--   **Self-Correction:** Before finalizing, mentally validate that the entire output is a single, perfectly formed JSON object parsable by any standard parser.

@@ -9,7 +9,7 @@ library(httr)
 #./gradlew run
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Script")
-journal<-"Methods in Ecology and Evolution"
+journal<-"ECOGRAPHY"
 target_folder<-sprintf("../Data/GROBID.XML/%s", journal)
 if (!dir.exists(target_folder)){
   dir.create(target_folder)
