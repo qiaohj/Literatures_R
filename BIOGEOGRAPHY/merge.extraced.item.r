@@ -6,23 +6,38 @@ library(readr)
 library(pdftools)
 library(jsonlite)
 library(ggplot2)
+library(RColorBrewer)
+library(ggrepel)
+library(scales)
+library(colorspace)
+library(httr)
+library(xml2)
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 source("Download.PDF/getArticles.r")
+source("RAG.LLM/xml2csv.r")
 crossref.year<-2025
-all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
-journals<-readRDS("../Data/JCR/Target.Journals.rda")
+if (F){
+  all_journal_folders<-gsub("../Data", "/media/huijieqiao/NAS/Literature", all_journal_folders)
+  all_journal_folders<-gsub("//", "/", all_journal_folders)
+  saveRDS(all_journal_folders, sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+}
+all_journal_folders<-readRDS(sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+journals<-readRDS("/media/huijieqiao/NAS/Literature/JCR/Target.Journals.rda")
 
 
 
-target.journals<-data.table(Title=c("ECOGRAPHY", "DIVERSITY AND DISTRIBUTIONS", 
-                                    "GLOBAL ECOLOGY AND BIOGEOGRAPHY", "JOURNAL OF BIOGEOGRAPHY"))
+target.journals<-data.table(Title=c("JOURNAL OF BIOGEOGRAPHY", "DIVERSITY AND DISTRIBUTIONS", "ECOGRAPHY", 
+                                    "GLOBAL ECOLOGY AND BIOGEOGRAPHY"))
 i=1
 authors.list<-list()
 geographical_scope.list<-list()
 data_sources.list<-list()
 keywords.list<-list()
 articles.list<-list()
+grobid_url <- "http://172.16.120.92:8070/api/processFulltextDocument"
+#target.journals<-target.journals[sample(nrow(target.journals), nrow(target.journals))]
+missing.pdfs<-c()
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
   folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
@@ -31,38 +46,253 @@ for (i in c(1:nrow(target.journals))){
   
   articles<-getArticles(conf.item, all_journal_folders)
   articles<-articles[, c("issue", "volume", "page", "title", "published", "doi.suffix")]
+  
+  articles.wos<-readRDS(sprintf("../Data/BIOGEOGRAPHY/WOS/%s.rda", item$Title))
+  articles.wos$page<-articles.wos$pages
+  articles.wos$published<-sprintf("%s-1-1", articles.wos$published_year)
+  articles.wos<-articles.wos[published_year=="2025"]
+  articles.wos<-articles.wos[, c("issue", "volume", "page", "title", "published", "doi.suffix")]
+  articles.wos<-articles.wos[!doi.suffix %in% articles$doi.suffix]
+  articles<-rbindlist(list(articles, articles.wos))
   articles$doi<-toupper(articles$doi.suffix)
   articles$journal<-item$Title
-  articles.list[[length(articles.list)+1]]<-articles
+  articles[, abstract:=""]
+  articles<-articles[title!="Issue Information"]
+  articles<-articles[title!="Author Index"]
+  articles<-articles[title!="An Attractive and Accessible Text"]
+  articles<-articles[title!="Book Reviews"]
+  articles<-articles[title!="Book reviews"]
+  articles<-articles[title!="Cover Image"]
+  articles<-articles[title!="Front Cover"]
+  articles<-articles[title!="Cover page"]
+  articles<-articles[title!="Title Page"]
+  articles<-articles[title!="Conclusions"]
+  articles<-articles[toupper(title)!="ERRATUM"]
+  articles<-articles[title!="List of Referees"]
+  articles<-articles[title!="List of Reviewers"]
+  articles<-articles[title!="List of Editors"]
+  articles<-articles[!grepl("LIST OF REFEREES", toupper(title))]
+  articles<-articles[!grepl("LIST OF REVIEWERS", toupper(title))]
+  articles<-articles[!grepl("LIST OF EDITORS", toupper(title))]
+  
+  articles<-articles[!grepl("BOOK REVIEWS", toupper(title))]
+  
+  articles<-articles[title!="Contents"]
+  
+  
+  articles<-articles[!grepl("Contents of", title)]
+  articles<-articles[!grepl("goes double blind", title)]
+  
+  articles<-articles[!grepl("Title Page", title)]
+  articles<-articles[!grepl("CORRIGENDUM", toupper(title))]
+  articles<-articles[!grepl("DIVERSITY AND DISTRIBUTIONS", toupper(title))]
+  articles<-articles[!grepl("FRONT COVER", toupper(title))]
+  articles<-articles[!grepl("ECOGRAPHY", toupper(title))]
+  articles<-articles[!grepl("GLOBAL ECOLOGY AND BIOGEOGRAPHY", toupper(title))]
+  articles<-articles[!grepl("JOURNAL OF BIOGEOGRAPHY", toupper(title))]
+  articles<-articles[!grepl("REVIEWER AND ASSOCIATE EDITOR AWARDS", toupper(title))]
+  articles<-articles[toupper(title)!="INTRODUCTION"]
+  
+  articles<-articles[!grepl("EDITORIAL", toupper(title))]
+  articles<-articles[!grepl("Correction to", title)]
+  
+  
+  if (F){
+    for (j in c(1:length(jsons))){
+      json.f<-jsons[j]
+      doi.item<-basename(json.f)
+      doi.item<-gsub("\\.json\\.rda", "", doi.item)
+      article.item<-articles[doi==doi.item]
+      if (nrow(article.item)==0){
+        next()
+      }
+      pdf.path<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s/%s.PDF",
+                        article.item$journal, 
+                        article.item$doi)
+      text<-pdf_text(pdf.path)
+      if (grepl("CORRIGENDUM", toupper(str_c(text, collapse = "\n")))){
+        
+      }
+    }
+  }
+  #jsons<-jsons[sample(length(jsons), length(jsons))]
+  
   for (j in c(1:length(jsons))){
+    print(paste(i, 4, j, length(jsons), item$Title))
     json.f<-jsons[j]
+    doi.item<-basename(json.f)
+    doi.item<-gsub("\\.json\\.rda", "", doi.item)
+    article.item<-articles[doi==doi.item]
+    if (nrow(article.item)==0){
+      next()
+    }
     json<-readRDS(json.f)
-    doi<-basename(json.f)
-    doi<-gsub("\\.json\\.rda", "", doi)
+    xml.path<-sprintf("../Data/BIOGEOGRAPHY/GROBID.XML/%s.xml", doi.item)
+    llm.json.path<-sprintf("/media/huijieqiao/NAS/Literature/LLM.Parse/%s/%s.json.rda",
+                           item$Title, doi.item)
+    pdf.path<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s/%s.PDF",
+                      article.item$journal, 
+                      article.item$doi)
+    if (F){
+      if (!file.exists(xml.path)){
+        
+        if (length(pdf.path)==0){
+          print("not found")
+          print(doi.item)
+          next()
+        }
+        pdf.path<-pdf.path[1]
+        if (!file.exists(pdf.path)){
+          next()
+        }
+        res <- tryCatch({
+          POST(
+            grobid_url,
+            body = list(
+              input = upload_file(pdf.path),
+              segmentSentences=0,
+              includeRawAffiliations=1,
+              consolidatFunders=1)
+          )},
+          error = function(e) {
+            message("Error: ", e$message)
+            return(NULL)
+          },
+          warning = function(w) {
+            message("Warning: ", w$message)
+          },
+          finally = {
+            
+          })
+        
+        if (is.null(res)){
+          print(pdf.path)
+          print("Paste error")
+          next()
+        }
+        if (status_code(res) == 200) {
+          xml_content <- content(res, as = "text", encoding = "UTF-8")
+          writeLines(xml_content, xml.path)
+        } else {
+          print(pdf.path)
+          cat("Error:", status_code(res), "\n")
+        }
+      }
+    }
+    if (!file.exists(xml.path) & !file.exists(llm.json.path)){
+      missing.pdfs<-c(missing.pdfs, pdf.path)
+    }else{
+      if (file.exists(xml.path)){
+        csv<-xml2csv(xml.path)  
+        abstract.str<-csv[active_section=="Abstract"]$text
+      }
+      if (abstract.str==""){
+        if (!file.exists(llm.json.path)){
+          missing.pdfs<-c(missing.pdfs, pdf.path)
+          next()
+        }
+        llm.json<-readRDS(llm.json.path)
+        abstract.str<-llm.json$Abstract
+        if (is.null(abstract.str)){
+          abstract.str<-""
+        }
+      }
+    }
+    
+    if (abstract.str==""){
+      # print(article.item$title)
+      
+      text.full<-pdf_text(pdf.path[1])
+      if (grepl("CORRIGENDUM", toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-"CORRIGENDUM"
+      }
+      if (grepl("BOOK REVIEW", toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-"BOOK REVIEW"
+      }
+      if (grepl("GUEST REVIEW ARTICLE", toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-"GUEST REVIEW ARTICLE"
+      }
+      if (grepl(toupper("Addendum"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Addendum")
+      }
+      if (grepl(toupper("Erratum"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Erratum")
+      }
+      if (grepl(toupper("Errata"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Errata")
+      }
+      
+      if (grepl(toupper("Review by"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Book Review")
+      }
+      
+      if (grepl(toupper("Response to"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Response")
+      }
+      if (grepl(toupper("Commentary"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Commentary")
+      }
+      if (grepl(toupper("Short notice"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Short notice")
+      }
+      if (grepl(toupper("Correspondence"), 
+                toupper(str_c(text.full, collapse = "\n")))){
+        abstract.str<-toupper("Correspondence")
+      }
+      
+      if (doi.item %in% c("2845491", "J.1365-2699.1996.TB00034.X")){
+        abstract.str<-"OTHERS"
+      }
+      
+    } 
+    if (abstract.str==""){
+      print(pdf.path)
+    }
+    
+    articles[doi==doi.item, abstract:=abstract.str]
+    
     if (length(json$authors)>0){
       authors<-json$authors
-      authors$doi<-doi
+      authors$doi<-doi.item
       authors$journal<-item$Title
       authors.list[[length(authors.list)+1]]<-authors
     }
     if (length(json$geographical_scope)>0){
       geographical_scope<-json$geographical_scope
-      geographical_scope$doi<-doi
+      geographical_scope$doi<-doi.item
       geographical_scope$journal<-item$Title
       geographical_scope.list[[length(geographical_scope.list)+1]]<-geographical_scope
     }
     if (length(json$data_sources)>0){
       data_sources<-json$data_sources
-      data_sources$doi<-doi
+      data_sources$doi<-doi.item
       data_sources$journal<-item$Title
       data_sources.list[[length(data_sources.list)+1]]<-data_sources
     }
     if (length(json$keywords)>0){
-      keywords<-data.table(keyword=json$keywords, doi=doi, journal=item$Title)
+      keywords<-data.table(keyword=json$keywords, doi=doi.item, journal=item$Title)
       keywords.list[[length(keywords.list)+1]]<-keywords
     }
   }
+  articles.list[[length(articles.list)+1]]<-articles
 }
+# print("DONE!")
+authors.df<-rbindlist(authors.list)
+geographical_scope.df<-rbindlist(geographical_scope.list)
+data_sources.df<-rbindlist(data_sources.list)
+keywords.df<-rbindlist(keywords.list)
+articles.df<-rbindlist(articles.list)
+
+dois<-unique(authors.df$doi)
+authors.df[doi==dois[sample(length(dois), 1)]]
+
 library(zoo)
 #https://data.worldbank.org/about/country-and-lending-groups
 gdp<-fread("../Data/BIOGEOGRAPHY/gdp.type.csv", head=T)
@@ -99,41 +329,131 @@ if (F){
   gdp<-gdp[, c("Country Name", "Country Code", "latest_gdp", "avg_2010_2024")]
   colnames(gdp)<-c("country_name", "country_iso3", "latest_gdp", "avg_2010_2024")
 }
-articles.df<-rbindlist(articles.list)
 articles.df$year <- as.numeric(format(as.Date(articles.df$published, format = "%Y-%m-%d"), "%Y"))
-
-N.articles<-articles.df[year>=2010, .(N.article=.N), by=c("journal")]
-
 authors.df<-rbindlist(authors.list)
-
-N<-merge(N.articles, N.authors.article, by="journal")
-N$per<-N$N.article.author/N$N.article
-
-articles.df[!doi %in% authors.df$doi]
-
 authors.df.full<-merge(authors.df, articles.df, by=c("doi", "journal"))
 authors.df.full$year <- as.numeric(format(as.Date(authors.df.full$published, format = "%Y-%m-%d"), "%Y"))
-authors.df.full[!country_iso3 %in% gdp$`Country Code`]
-authors.df.full<-merge(authors.df.full, gdp_final, by=c("country_iso3", "year"))
-authors.df.full<-authors.df.full[type!=""]
-N.authors.article<-articles.df[year>=2010, .(N=length(unique(doi))), by=list(journal)]
+authors.df.full[doi=="JBI.70001"]
+authors.df.full<-authors.df.full[title!="Issue Information"]
+authors.df.full<-authors.df.full[title!="Author Index"]
+authors.df.full<-authors.df.full[title!="An Attractive and Accessible Text"]
+authors.df.full<-authors.df.full[title!="Book Reviews"]
+authors.df.full<-authors.df.full[title!="Book reviews"]
+authors.df.full<-authors.df.full[title!="Cover Image"]
+authors.df.full<-authors.df.full[title!="Front Cover"]
+authors.df.full<-authors.df.full[title!="Cover page"]
+authors.df.full<-authors.df.full[title!="Conclusions"]
+authors.df.full<-authors.df.full[toupper(title)!="ERRATUM"]
+authors.df.full<-authors.df.full[title!="List of Referees"]
+authors.df.full<-authors.df.full[!grepl("LIST OF REFEREES", toupper(title))]
+authors.df.full<-authors.df.full[!grepl("BOOK REVIEWS", toupper(title))]
+authors.df.full<-authors.df.full[title!="Contents"]
+authors.df.full<-authors.df.full[!grepl("Contents of", title)]
+authors.df.full<-authors.df.full[!grepl("CORRIGENDUM", toupper(title))]
+authors.df.full<-authors.df.full[!grepl("EDITORIAL", toupper(title))]
+authors.df.full<-authors.df.full[!grepl("Correction to", title)]
 
 
-N.authors.article<-authors.df.full[year>=2010, .(N=length(unique(doi))), by=list(journal, year)]
+xxx<-authors.df.full[!country_iso3 %in% gdp_final$country_iso3]
+table(xxx$journal)
+View(xxx)
 
-ggplot(articles.N[year>=2010])+geom_line(aes(x=year, y=N, color=journal))+
-  geom_vline(xintercept = 2019)+
-  geom_vline(xintercept = 2023)
-
-all_gdp_types <- unique(authors.df.full$type)
+authors.df.full.gpd<-merge(authors.df.full, gdp_final, by=c("country_iso3", "year"))
+authors.df.full.gpd<-authors.df.full.gpd[type!=""]
 gdp_type_numeric_mapping <- c(
   "L" = 0,
   "LM" = 1,
   "UM" = 2,
   "H" = 3
 )
+authors.df.full.gpd$gdp.score<-gdp_type_numeric_mapping[authors.df.full.gpd$type]
+authors.df.full.gpd$gdp.type<-authors.df.full.gpd$type
+authors.df.full.gpd[type %in% c("LM", "L"), gdp.type:="L"]
 
-dt_ebdi_results <- authors.df.full[, {
+saveRDS(authors.df.full.gpd, "../Data/BIOGEOGRAPHY/authors.rda")
+
+authors.df.full.gpd[, c("country_iso3", "year", "journal")]
+#Country by year
+N.type<-authors.df.full.gpd[between(year, 2010, 2024) & (is_first_author==T | is_corresponding_author==T), 
+                            .(N.articles=length(unique(doi)),
+                              N.yeaer=length(unique(year))), 
+                            by=c("gdp.type")]
+
+
+ggplot(N.country)+geom_point(aes(x=type, y=N.articles))
+
+N.authors.article<-authors.df.full.gpd[, .(N.yearly=length(unique(doi))), 
+                                       by=list(journal, year)]
+
+ggplot(N.authors.article)+geom_line(aes(x=year, y=N, color=journal))+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)
+
+all_gdp_types <- unique(authors.df.full$type)
+
+
+#First author GDP
+first.author<-authors.df.full.gpd[is_first_author==T]
+first.author.N<-first.author[,.(N=.N), by=list(year, journal, gdp.type)]
+first.author.N<-merge(first.author.N, N.authors.article, by=c("journal", "year"))
+first.author.N$t1<-"First author"
+first.author.N$t2<-"ALL countries"
+p1<-ggplot(first.author.N[year>=2010])+
+  geom_line(aes(x=year, y=N/N.yearly, color=journal, linetype = gdp.type))+
+  scale_y_sqrt()+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)
+p1
+#First author no China GDP
+first.author.no.china<-authors.df.full.gpd[is_first_author==T & country_iso3!="CHN"]
+first.author.no.china.N<-first.author.no.china[,.(N=.N), by=list(year, journal, gdp.type)]
+first.author.no.china.N<-merge(first.author.no.china.N, N.authors.article, by=c("journal", "year"))
+first.author.no.china.N$t1<-"First author"
+first.author.no.china.N$t2<-"Without China"
+p2<-ggplot(first.author.no.china.N[year>=2010])+
+  geom_line(aes(x=year, y=N/N.yearly, color=journal, linetype = gdp.type))+
+  scale_y_sqrt()+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)
+p2
+
+#corresponding_author GDP
+corresponding_author<-authors.df.full.gpd[is_corresponding_author==T]
+corresponding_author.N<-corresponding_author[,.(N=.N), by=list(year, journal, gdp.type)]
+corresponding_author.N<-merge(corresponding_author.N, N.authors.article, by=c("journal", "year"))
+corresponding_author.N$t1<-"Corresponding author"
+corresponding_author.N$t2<-"ALL countries"
+p3<-ggplot(corresponding_author.N[year>=2010])+
+  geom_line(aes(x=year, y=N/N.yearly, color=journal, linetype = gdp.type))+
+  scale_y_sqrt()+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)
+p3
+#corresponding_author GDP
+corresponding_author.no.china<-authors.df.full.gpd[is_corresponding_author==T & country_iso3!="CHN"]
+corresponding_author.no.china.N<-corresponding_author.no.china[,.(N=.N), by=list(year, journal, gdp.type)]
+corresponding_author.no.china.N<-merge(corresponding_author.no.china.N, N.authors.article, by=c("journal", "year"))
+corresponding_author.no.china.N$t1<-"Corresponding author"
+corresponding_author.no.china.N$t2<-"Without China"
+p4<-ggplot(corresponding_author.no.china.N[year>=2010])+
+  geom_line(aes(x=year, y=N/N.yearly, color=journal, linetype = gdp.type))+
+  scale_y_sqrt()+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)
+p4
+df.full<-rbindlist(list(first.author.N, first.author.no.china.N, 
+                        corresponding_author.N, 
+                        corresponding_author.no.china.N))
+ggplot(df.full[year>=2010])+
+  geom_line(aes(x=year, y=N/N.yearly, color=journal, linetype = gdp.type))+
+  scale_y_sqrt()+
+  geom_vline(xintercept = 2019)+
+  geom_vline(xintercept = 2023)+
+  facet_grid(t1~t2)+
+  theme_bw()
+
+
+dt_ebdi_results <- authors.df.full.gpd[, {
   N_Total <- .N
   ebdi_score <- NA_real_
   mean_gdp_score <- NA_real_
@@ -159,7 +479,7 @@ dt_ebdi_results <- authors.df.full[, {
        N_Total=N_Total)
 }, by = "doi"]
 
-dt_ebdi_results_co_author <- authors.df.full[is_corresponding_author==T, {
+dt_ebdi_results_co_author <- authors.df.full.gpd[is_corresponding_author==T, {
   N_Total <- .N
   ebdi_score <- NA_real_
   mean_gdp_score <- NA_real_
@@ -185,7 +505,7 @@ dt_ebdi_results_co_author <- authors.df.full[is_corresponding_author==T, {
        N_Total=N_Total)
 }, by = "doi"]
 
-ggplot(dt_ebdi_results[ebdi_score>0 & year>2010], 
+ggplot(dt_ebdi_results[ebdi_score>0], 
        aes(x=year, y=ebdi_score, size=mean_gdp_score, color=journal))+
   #geom_point()+
   geom_vline(xintercept = 2019)+
@@ -228,7 +548,6 @@ keywords.df<-rbindlist(keywords.list)
 keywords.df.full<-merge(keywords.df, articles.df, by="doi")
 keywords.df.full$year <- as.numeric(format(as.Date(keywords.df.full$published, format = "%Y-%m-%d"), "%Y"))
 
-saveRDS(authors.df.full, "../Data/BIOGEOGRAPHY/authors.rda")
 saveRDS(geographical_scope.df.full, "../Data/BIOGEOGRAPHY/geographical_scope.rda")
 saveRDS(data_sources.df.full, "../Data/BIOGEOGRAPHY/data_sources.rda")
 saveRDS(keywords.df.full, "../Data/BIOGEOGRAPHY/keywords.rda")

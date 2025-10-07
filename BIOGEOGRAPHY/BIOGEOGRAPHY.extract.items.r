@@ -48,7 +48,7 @@ gen_config <- list(
 )
 
 
-models<-c("gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash")
+models<-c("gemini-2.5-pro", "gemini-flash-latest", "gemini-2.0-flash")
 mstr<-models[2]
 clean_text <- function(text) {
   if (is.null(text) || nchar(text) == 0) {
@@ -71,8 +71,8 @@ target.journals<-data.table(Title=c("ECOGRAPHY", "DIVERSITY AND DISTRIBUTIONS",
 i=1
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
-  folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", item$Title)
-  target<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
+  folder<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s", item$Title)
+  target<-sprintf("../Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
   if (dir.exists(target)){
     #next()
   }else{
@@ -97,8 +97,9 @@ for (i in c(1:nrow(target.journals))){
     if (file.exists(json.rda.file)){
       next()
     }
+    
     if (!file.exists(json.rda.file) & file.exists(target.file)){
-      #print(target.file)
+      #print(pdf_path)
       #file.remove(target.file)
       #next()
     }
@@ -109,7 +110,7 @@ for (i in c(1:nrow(target.journals))){
         
         #file.remove(target.file)
       }
-      next()
+      #next()
     }
     #next()
     
@@ -161,7 +162,7 @@ for (i in c(1:nrow(target.journals))){
           upload.path<-pdf_path
           type<-"PDF"
           #stop("Test")
-          if (F){
+          if (T){
             text_content <- pdf_text(pdf_path)
             all_text_info<-str_c(text_content, collapse = "\n")
             all_text_info<-clean_text(all_text_info)

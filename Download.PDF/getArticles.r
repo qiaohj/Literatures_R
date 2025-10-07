@@ -46,12 +46,12 @@ html.download.journal.list.type2<-c("Resilience Alliance, Inc.",
                                     "Biodiversity Heritage Library"
 )
 if (F){
-  all_journal_folders<-list.dirs(sprintf("../Data/CrossRef_By_Journal/%d/", crossref.year))
-  saveRDS(all_journal_folders, sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+  all_journal_folders<-list.dirs(sprintf("/media/huijieqiao/NAS/Literature/CrossRef_By_Journal/%d/", crossref.year))
+  saveRDS(all_journal_folders, sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
   
 }
 if (F){
-  categories<-list.files("../Data/JCR/Target.Journals/", pattern="\\.csv")
+  categories<-list.files("/media/huijieqiao/NAS/Literature/JCR/Target.Journals/", pattern="\\.csv")
   categories<-gsub("\\.csv", "", categories)
   category<-"MULTIDISCIPLINARY SCIENCES.2025"
   
@@ -81,12 +81,12 @@ if (F){
   journals<-unique(journals)
   journals.N<-journals[,.(N=.N), by=list(journal)]
   journals.N[N>1]
-  saveRDS(journals, "../Data/JCR/Target.Journals.rda")
+  saveRDS(journals, "/media/huijieqiao/NAS/Literature/JCR/Target.Journals.rda")
   
-  all_journal_folders<-readRDS(sprintf("../Data/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+  all_journal_folders<-readRDS(sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
   for (i in c(1:nrow(journals))){
     item<-journals[i]
-    target<-sprintf("../Data/Journal.Article/%d/%s.rda", crossref.year, item$journal)
+    target<-sprintf("/media/huijieqiao/NAS/Literature/Journal.Article/%d/%s.rda", crossref.year, item$journal)
     if (file.exists(target)){
       next()
     }
@@ -112,6 +112,7 @@ getArticles<-function(conf.item, all_journal_folders){
   }
   article_item<-list()
   for (f in folders){
+    f<-gsub("\\|", "\\.", f)
     if (!file.exists(sprintf("%s/articles.rda", f))){
       next()
     }
@@ -137,7 +138,7 @@ getArticles<-function(conf.item, all_journal_folders){
 }
 
 readJournal<-function(category){
-  journal.conf<-fread(sprintf("../Data/JCR/Target.Journals/%s.csv", category), header=T)
+  journal.conf<-fread(sprintf("/media/huijieqiao/NAS/Literature/JCR/Target.Journals/%s.csv", category), header=T)
   journal.conf$journal<-toupper(journal.conf$`Journal name`)
   journal.conf$journal<-gsub("&", "AND", journal.conf$journal)
   journal.conf$journal<-toupper(gsub("ANDAMP;", "AND", journal.conf$journal))
