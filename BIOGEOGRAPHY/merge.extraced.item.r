@@ -49,7 +49,7 @@ for (i in c(1:nrow(target.journals))){
   
   articles.wos<-readRDS(sprintf("../Data/BIOGEOGRAPHY/WOS/%s.rda", item$Title))
   articles.wos$page<-articles.wos$pages
-  articles.wos$published<-sprintf("%s-1-1", articles.wos$published_year)
+  articles.wos$published<-as.Date(sprintf("%s-1-1", articles.wos$published_year))
   articles.wos<-articles.wos[published_year=="2025"]
   articles.wos<-articles.wos[, c("issue", "volume", "page", "title", "published", "doi.suffix")]
   articles.wos<-articles.wos[!doi.suffix %in% articles$doi.suffix]
@@ -283,12 +283,72 @@ for (i in c(1:nrow(target.journals))){
   }
   articles.list[[length(articles.list)+1]]<-articles
 }
+saveRDS(missing.pdfs, "../Data/BIOGEOGRAPHY/missing.abstract.pdf.rda")
 # print("DONE!")
+articles.df<-rbindlist(articles.list)
+
+for (i in c(1:length(missing.pdfs))){
+  ppp<-missing.pdfs[i]
+  print(paste(i, length(missing.pdfs), ppp))
+  if (ppp %in% c("/media/huijieqiao/NAS/Literature/PDF/JOURNAL OF BIOGEOGRAPHY/JBI.12909.PDF")){
+    abs.str<-""
+  }else{
+    json.path<-gsub("/PDF/", "/LLM.Parse/", ppp)
+    json.path<-gsub("\\.PDF", "\\.json\\.rda", json.path)
+    if (!file.exists(json.path)){
+      json.path.json<-gsub("\\.rda", "", json.path)
+      json<-fromJSON(gsub("json", "", gsub("`", "", read_file(json.path.json))))
+      saveRDS(json, json.path)
+    }
+    json<-readRDS(json.path)
+    if (is.null(json)){
+      asdf
+    }
+    if (is.null(json$Abstract)){
+      abs.str<-""
+    }else{
+      abs.str<-json$Abstract
+    }
+  }
+  doi.pdf<-gsub("\\.PDF", "", basename(ppp))
+  articles.df[doi==doi.pdf, abstract:=abs.str]
+}
+View(articles.df[abstract==""])
+articles.df<-articles.df[abstract!=""]
+if (F){
+  xxx<-list()
+  for (i in c(1:nrow(target.journals))){
+    item<-target.journals[i]
+    folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
+    conf.item<-journals[journal==item$Title]
+    jsons<-list.files(folder, pattern="\\.json.rda", full.name=T)
+    
+    articles<-getArticles(conf.item, all_journal_folders)
+    articles<-articles[, c("issue", "volume", "page", "title", "published", "doi.suffix")]
+    
+    articles.wos<-readRDS(sprintf("../Data/BIOGEOGRAPHY/WOS/%s.rda", item$Title))
+    articles.wos$page<-articles.wos$pages
+    articles.wos$published<-as.Date(sprintf("%s-1-1", articles.wos$published_year))
+    articles.wos<-articles.wos[published_year=="2025"]
+    articles.wos<-articles.wos[, c("issue", "volume", "page", "title", "published", "doi.suffix")]
+    articles.wos<-articles.wos[!doi.suffix %in% articles$doi.suffix]
+    articles<-rbindlist(list(articles, articles.wos))
+    xxx[[i]]<-articles
+  }
+  xxx.df<-rbindlist(xxx)
+  xxx.df<-unique(xxx.df[, c("published", "doi.suffix")])
+  articles.df$published<-NULL
+  articles.fixed<-merge(articles.df, xxx.df, by="doi.suffix")
+  xxxxxx<-articles.fixed[, .(N=.N), by=c("doi.suffix")]
+  xxxxxx[N>1]
+  articles.fixed[doi.suffix=="j.1365-2699.1999.00298.x"]
+  articles.fixed<-articles.fixed[!doi.suffix %in% xxxxxx[N>1]$doi.suffix]
+  articles.df<-unique(articles.fixed)
+}
 authors.df<-rbindlist(authors.list)
 geographical_scope.df<-rbindlist(geographical_scope.list)
 data_sources.df<-rbindlist(data_sources.list)
 keywords.df<-rbindlist(keywords.list)
-articles.df<-rbindlist(articles.list)
 
 dois<-unique(authors.df$doi)
 authors.df[doi==dois[sample(length(dois), 1)]]
@@ -371,6 +431,26 @@ authors.df.full.gpd$gdp.type<-authors.df.full.gpd$type
 authors.df.full.gpd[type %in% c("LM", "L"), gdp.type:="L"]
 
 saveRDS(authors.df.full.gpd, "../Data/BIOGEOGRAPHY/authors.rda")
+
+geographical_scope.df<-rbindlist(geographical_scope.list)
+geographical_scope.df.full<-merge(geographical_scope.df, articles.df, by="doi")
+geographical_scope.df.full$year <- as.numeric(format(as.Date(geographical_scope.df.full$published, format = "%Y-%m-%d"), "%Y"))
+
+
+data_sources.df<-rbindlist(data_sources.list)
+data_sources.df.full<-merge(data_sources.df, articles.df, by="doi")
+data_sources.df.full$year <- as.numeric(format(as.Date(data_sources.df.full$published, format = "%Y-%m-%d"), "%Y"))
+
+keywords.df<-rbindlist(keywords.list)
+keywords.df.full<-merge(keywords.df, articles.df, by="doi")
+keywords.df.full$year <- as.numeric(format(as.Date(keywords.df.full$published, format = "%Y-%m-%d"), "%Y"))
+
+saveRDS(geographical_scope.df.full, "../Data/BIOGEOGRAPHY/geographical_scope.rda")
+saveRDS(data_sources.df.full, "../Data/BIOGEOGRAPHY/data_sources.rda")
+saveRDS(keywords.df.full, "../Data/BIOGEOGRAPHY/keywords.rda")
+saveRDS(articles.df, "../Data/BIOGEOGRAPHY/articles.rda")
+
+
 
 authors.df.full.gpd[, c("country_iso3", "year", "journal")]
 #Country by year
@@ -535,22 +615,7 @@ ggplot(dt_ebdi_results_co_author[year>2010],
 
 
 table(authors.df.full$type)
-geographical_scope.df<-rbindlist(geographical_scope.list)
-geographical_scope.df.full<-merge(geographical_scope.df, articles.df, by="doi")
-geographical_scope.df.full$year <- as.numeric(format(as.Date(geographical_scope.df.full$published, format = "%Y-%m-%d"), "%Y"))
 
-
-data_sources.df<-rbindlist(data_sources.list)
-data_sources.df.full<-merge(data_sources.df, articles.df, by="doi")
-data_sources.df.full$year <- as.numeric(format(as.Date(data_sources.df.full$published, format = "%Y-%m-%d"), "%Y"))
-
-keywords.df<-rbindlist(keywords.list)
-keywords.df.full<-merge(keywords.df, articles.df, by="doi")
-keywords.df.full$year <- as.numeric(format(as.Date(keywords.df.full$published, format = "%Y-%m-%d"), "%Y"))
-
-saveRDS(geographical_scope.df.full, "../Data/BIOGEOGRAPHY/geographical_scope.rda")
-saveRDS(data_sources.df.full, "../Data/BIOGEOGRAPHY/data_sources.rda")
-saveRDS(keywords.df.full, "../Data/BIOGEOGRAPHY/keywords.rda")
 xxx<-authors.df.full[year>=2010, c("country_iso3", "doi", "journal", "type", "year")]
 xxx[journal=="DIVERSITY AND DISTRIBUTIONS", journal:="DDI"]
 xxx[journal=="ECOGRAPHY", journal:="E"]

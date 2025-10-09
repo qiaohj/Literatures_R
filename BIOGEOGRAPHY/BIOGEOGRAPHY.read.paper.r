@@ -48,7 +48,7 @@ gen_config <- list(
 )
 
 
-models<-c("gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash")
+models<-c("gemini-2.5-pro", "gemini-flash-latest", "gemini-2.0-flash")
 mstr<-models[2]
 clean_text <- function(text) {
   if (is.null(text) || nchar(text) == 0) {
@@ -64,21 +64,23 @@ clean_text <- function(text) {
 
 
 #system_instruction<-read_file("LLM.API/PROMPT/read.paper.md")
-system_instruction<-read_file("LLM.API/PROMPT/read.paper.no.table.figure.md")
+system_instruction<-read_file("LLM.API/PROMPT/read.paper.abstract.md")
 
 target.journals<-data.table(Title=c("ECOGRAPHY", "DIVERSITY AND DISTRIBUTIONS", 
                                     "GLOBAL ECOLOGY AND BIOGEOGRAPHY", "JOURNAL OF BIOGEOGRAPHY"))
+missing.pdfs<-readRDS("../Data/BIOGEOGRAPHY/missing.abstract.pdf.rda")
 i=1
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
-  folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/PDF/%s", item$Title)
-  target<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/LLM.Parse/%s", item$Title)
+  folder<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s", item$Title)
+  target<-sprintf("/media/huijieqiao/NAS/Literature/LLM.Parse/%s", item$Title)
   if (dir.exists(target)){
     #next()
   }else{
     dir.create(target)
   }
   pdfs<-list.files(folder, pattern="\\.PDF", full.name=T)
+  pdfs<-pdfs[pdfs %in% missing.pdfs]
   if (length(pdfs)==0){
     next()
   }

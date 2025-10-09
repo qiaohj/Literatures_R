@@ -63,82 +63,103 @@ full.text<-readRDS("../Data/BIOGEOGRAPHY/full.text.rda")
 
 num_topics <- 100
 
-
-# Create a data.table, which is ideal for efficient processing
-keywords_dt <- full.text[, c("doi", "full.text")]
-keywords_dt$doc_id<-as.character(seq_along(full.text$full.text))
-# Create a Corpus, the starting point for text processing with the 'tm' package
-corpus <- Corpus(VectorSource(keywords_dt$full.text))
-
-# Begin the text cleaning pipeline
-corpus <- tm_map(corpus, content_transformer(tolower)) # 1. Convert to lowercase
-corpus <- tm_map(corpus, removeNumbers)                # 2. Remove numbers
-corpus <- tm_map(corpus, removePunctuation)            # 3. Remove punctuation
-corpus <- tm_map(corpus, removeWords, stopwords("english")) # 4. Remove common English stop words
-corpus <- tm_map(corpus, stripWhitespace)             # 5. Remove excess whitespace
-corpus <- tm_map(corpus, stemDocument)                 # 6. Perform stemming (very important!)
-# e.g., "modelling" -> "model", "species" -> "speci"
-
-# --- 3. Create Document-Term Matrix (DTM) ---
-
-# The DTM is the input for the LDA model: rows are documents (keyword phrases),
-# columns are terms (stems), and values are term frequencies.
-dtm <- DocumentTermMatrix(corpus)
-
-# Many terms that appear only once can add noise. We can remove very sparse terms.
-# For this large dataset, we will keep all terms for now, but you can uncomment
-# the line below to make the DTM smaller and potentially faster.
-# dtm <- removeSparseTerms(dtm, 0.995) # Keeps terms that appear in at least 0.5% of docs
-
-# The LDA model requires that every document (row) has at least one term.
-# Remove empty rows that might result from preprocessing.
-row_totals <- apply(dtm, 1, sum)
-dtm <- dtm[row_totals > 0, ]
-# Also, update our original keywords data.table to keep them in sync
-keywords_dt_filtered <- keywords_dt[doc_id %in% dtm$dimnames$Docs]
-keywords_dt[doc_id=="8833"]
-
-
-cat("Preprocessing complete. DTM dimensions:", nrow(dtm), "documents,", ncol(dtm), "terms.\n")
-
-# --- 4. Run the LDA Model ---
-
-cat("Running LDA model to find", num_topics, "topics... (This may take a few minutes)\n")
-
-# Set a random seed for reproducibility
-set.seed(12345)
-
-# Run the LDA algorithm
-lda_model <- LDA(dtm, k = num_topics, control = list(seed = 12345))
-saveRDS(lda_model, "../Data/BIOGEOGRAPHY/lda_model.rda")
-cat("LDA model training complete.\n")
-
-
-# --- 5. Interpret and Use the Results ---
-
-# === 5.1 Understand Topic Composition (Beta values) ===
-
-# Use tidytext's tidy() function to extract the per-topic-per-term probabilities (beta)
-topics_beta <- tidy(lda_model, matrix = "beta")
-setDT(topics_beta) # Convert to data.table for efficiency
-saveRDS(topics_beta, "../Data/BIOGEOGRAPHY/topics_beta.rda")
-
-# Find the top 100 terms within each topic
-top_terms_per_topic <- topics_beta[, .SD[order(-beta)][1:100], by = topic]
-fwrite(top_terms_per_topic, "../Data/BIOGEOGRAPHY/topic.term.csv")
-
-
-# Extract the per-document-per-topic probabilities (gamma)
-documents_gamma <- tidy(lda_model, matrix = "gamma")
-setDT(documents_gamma) # Convert to data.table
-saveRDS(documents_gamma, "../Data/BIOGEOGRAPHY/documents_gamma.rda")
-
-
+for (num_topics in seq(10, 100, by=10)){
+  print(num_topics)
+  target<-sprintf("../Data/BIOGEOGRAPHY/lda_model_n_topics_%d.rda", num_topics)
+  if (file.exists(target)){
+    next()
+  }
+  # Create a data.table, which is ideal for efficient processing
+  keywords_dt <- full.text[, c("doi", "full.text")]
+  keywords_dt$doc_id<-as.character(seq_along(full.text$full.text))
+  # Create a Corpus, the starting point for text processing with the 'tm' package
+  corpus <- Corpus(VectorSource(keywords_dt$full.text))
+  
+  if (F){
+    corpus_original <- corpus 
+    corpus_after <- tm_map(corpus_original, content_transformer(tolower)) 
+    ids_before <- names(corpus_original)
+    ids_after <- names(corpus_after)
+    dropped_documents <- setdiff(ids_before, ids_after)
+    
+    if (length(dropped_documents) > 0) {
+      cat("documents were deleted:\n")
+      print(dropped_documents)
+    } else {
+      cat("no document was deleted\n")
+    }
+  }
+  
+  # Begin the text cleaning pipeline
+  corpus <- tm_map(corpus, content_transformer(tolower)) # 1. Convert to lowercase
+  corpus <- tm_map(corpus, removeNumbers)                # 2. Remove numbers
+  corpus <- tm_map(corpus, removePunctuation)            # 3. Remove punctuation
+  corpus <- tm_map(corpus, removeWords, stopwords("english")) # 4. Remove common English stop words
+  corpus <- tm_map(corpus, stripWhitespace)             # 5. Remove excess whitespace
+  corpus <- tm_map(corpus, stemDocument)                 # 6. Perform stemming (very important!)
+  # e.g., "modelling" -> "model", "species" -> "speci"
+  
+  # --- 3. Create Document-Term Matrix (DTM) ---
+  
+  # The DTM is the input for the LDA model: rows are documents (keyword phrases),
+  # columns are terms (stems), and values are term frequencies.
+  dtm <- DocumentTermMatrix(corpus)
+  
+  # Many terms that appear only once can add noise. We can remove very sparse terms.
+  # For this large dataset, we will keep all terms for now, but you can uncomment
+  # the line below to make the DTM smaller and potentially faster.
+  # dtm <- removeSparseTerms(dtm, 0.995) # Keeps terms that appear in at least 0.5% of docs
+  
+  # The LDA model requires that every document (row) has at least one term.
+  # Remove empty rows that might result from preprocessing.
+  row_totals <- apply(dtm, 1, sum)
+  dtm <- dtm[row_totals > 0, ]
+  # Also, update our original keywords data.table to keep them in sync
+  keywords_dt_filtered <- keywords_dt[doc_id %in% dtm$dimnames$Docs]
+  keywords_dt[doc_id=="8833"]
+  
+  
+  cat("Preprocessing complete. DTM dimensions:", nrow(dtm), "documents,", ncol(dtm), "terms.\n")
+  
+  # --- 4. Run the LDA Model ---
+  
+  cat("Running LDA model to find", num_topics, "topics... (This may take a few minutes)\n")
+  
+  # Set a random seed for reproducibility
+  set.seed(12345)
+  
+  # Run the LDA algorithm
+  lda_model <- LDA(dtm, k = num_topics, control = list(seed = 12345))
+  saveRDS(lda_model, target)
+  cat("LDA model training complete.\n")
+  
+  
+  # --- 5. Interpret and Use the Results ---
+  
+  # === 5.1 Understand Topic Composition (Beta values) ===
+  
+  # Use tidytext's tidy() function to extract the per-topic-per-term probabilities (beta)
+  topics_beta <- tidy(lda_model, matrix = "beta")
+  setDT(topics_beta) # Convert to data.table for efficiency
+  saveRDS(topics_beta, sprintf("../Data/BIOGEOGRAPHY/topics_beta_n_topics_%d.rda", num_topics))
+  
+  # Find the top 100 terms within each topic
+  top_terms_per_topic <- topics_beta[, .SD[order(-beta)][1:100], by = topic]
+  fwrite(top_terms_per_topic, sprintf("../Data/BIOGEOGRAPHY/topic.term_n_topics_%d.csv", num_topics))
+  
+  
+  # Extract the per-document-per-topic probabilities (gamma)
+  documents_gamma <- tidy(lda_model, matrix = "gamma")
+  setDT(documents_gamma) # Convert to data.table
+  saveRDS(documents_gamma, sprintf("../Data/BIOGEOGRAPHY/documents_gamma_n_topics_%d.rda", num_topics))
+  
+}
 # For each document, find the topic with the highest gamma probability
 top_topic_for_doc <- documents_gamma[, .SD[which.max(gamma)], by = document]
+top_topic_for_doc[gamma==min(top_topic_for_doc$gamma)]
 threshold<-min(top_topic_for_doc$gamma)
-top_topic_for_doc[document=="8833"]
-full.text[doc_id=="8833"]
+top_topic_for_doc[document=="1383"]
+
 topic_for_doc<-documents_gamma[gamma>threshold]
 # Merge the results with the original keywords
 # The 'document' column format is 'doc_id', which we use for the join
@@ -160,7 +181,7 @@ final.result$original_keyword<-NULL
 final.result$abstract<-NULL
 final.result.N<-final.result[,.(N=.N), by=list(year, journal, Topic_Name)]
 ggplot(final.result.N)+geom_line(aes(x=year, y=N, color=Topic_Name))+
-  facet_wrap(~journal, ncol=1)+
+  facet_wrap(~journal, ncol=1, scale="free")+
   theme(legend.position = "none")
 final.result.N.all<-final.result[,.(N=.N), by=list(journal,Topic_Name)]
 ggplot(final.result)+geom_histogram(aes(x=Topic_Name), stat="count")+facet_wrap(~journal, ncol=1)
@@ -168,11 +189,11 @@ ggplot(final.result)+geom_histogram(aes(x=Topic_Name), stat="count")+facet_wrap(
 single.topic<-final.result[, .(N=.N), by=list(doi)]
 min(final.result[doi %in% single.topic[N==1]$doi]$probability)
 final.result[doc_id=="8833"]
-probability<0.1]
+
 final.result[doi=="ECOG.02849"]
-wordcloud(words = final.result.N.all[journal=="OURNAL OF BIOGEOGRAPHY"]$Topic_Name,
-          freq = final.result.N.all[journal=="OURNAL OF BIOGEOGRAPHY"]$N,
-          min.freq = 1,          # Minimum frequency for a word to be plotted
+wordcloud(words = final.result.N.all[journal=="JOURNAL OF BIOGEOGRAPHY"]$Topic_Name,
+          freq = final.result.N.all[journal=="JOURNAL OF BIOGEOGRAPHY"]$N,
+          min.freq = 10,          # Minimum frequency for a word to be plotted
           max.words = 100,       # Maximum number of words to be plotted
           random.order = FALSE,  # Plot words in decreasing frequency
           rot.per = 0.3,         # Proportion of words rotated 90 degrees
@@ -180,7 +201,7 @@ wordcloud(words = final.result.N.all[journal=="OURNAL OF BIOGEOGRAPHY"]$Topic_Na
           scale = c(3, 0.5))  
 wordcloud(words = final.result.N.all[journal=="JOURNAL OF BIOGEOGRAPHY"]$Topic_Name,
           freq = final.result.N.all[journal=="JOURNAL OF BIOGEOGRAPHY"]$N,
-          min.freq = 1,
+          min.freq = 10,
           max.words = 100,
           random.order = FALSE,
           rot.per = 0.3,
