@@ -9,17 +9,27 @@ authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.rda")
 authors.df.full.gpd<-authors.df.full.gpd[between(year, 2010, 2025)]
 authors.df.full.gpd$country.group<-""
 authors.df.full.gpd[country_name %in% c("Hong Kong SAR, China", "Taiwan, China"), country_name:="China"]
-
-saveRDS(authors.df.full.gpd, "../Data/BIOGEOGRAPHY/authors.fixed.rda")
-
+authors.df.full.gpd[country_iso3 %in% unique(authors.df.full.gpd[country_name=="China"]$country_iso3), 
+                    country_iso3:="CHN"]
 
 article.N<-authors.df.full.gpd[, .(N.article=length(unique(doi))),
                                by=list(country_name)]
 setorderv(article.N, "N.article", -1)
-article.N.top10<-article.N[1:10]
+article.N.top10<-article.N[1:9]
 
 authors.df.full.gpd[country_name %in% article.N.top10$country_name, country.group:=country_name]
 authors.df.full.gpd[country.group=="", country.group:=sprintf("Others - %s", gdp.type)]
+authors.df.full.gpd$journal.abbr<-factor(authors.df.full.gpd$journal, 
+                                levels=c("DIVERSITY AND DISTRIBUTIONS",
+                                         "ECOGRAPHY",
+                                         "GLOBAL ECOLOGY AND BIOGEOGRAPHY",
+                                         "JOURNAL OF BIOGEOGRAPHY"),
+                                labels=c("DDI", "ECOG", "GEB", "JBI"))
+full.text<-readRDS("../Data/BIOGEOGRAPHY/full.text.rda")
+authors.df.full.gpd<-authors.df.full.gpd[doi %in% full.text$doi]
+saveRDS(authors.df.full.gpd, "../Data/BIOGEOGRAPHY/authors.fixed.rda")
+
+
 item<-authors.df.full.gpd[is_corresponding_author==T]
 table(item$country.group)
 
@@ -30,7 +40,7 @@ article.N.full<-merge(author.N, article.N, by=c("year", "journal"))
 
 article.N.full$country.group<-factor(article.N.full$country.group, 
                                      levels=c("Australia", "Brazil","Canada","China","France","Germany",
-                                              "Spain", "Switzerland",
+                                              "Spain",
                                               "United Kingdom","United States",
                                               "Others - H","Others - UM","Others - L"))
 article.N.full$journal.abbr<-factor(article.N.full$journal, 
@@ -116,8 +126,8 @@ p <- ggplot(plot_dt, aes(x = period, y = per_mean, group = facet_label, color = 
   )+
   facet_wrap(~ journal.abbr, scales = "free_y", ncol = 2) +
   labs(
-    title = "Percentage Change Comparison: Pre-2019 vs. Post-2019",
-    subtitle = "Wilcoxon Rank-Sum Test used for significance (p < 0.05)",
+    #title = "Percentage Change Comparison: Pre-2019 vs. Post-2019",
+    #subtitle = "Wilcoxon Rank-Sum Test used for significance (p < 0.05)",
     y = "Mean Percentage (per)",
     x = "Period",
     color = "Statistical Outcome"
@@ -138,7 +148,7 @@ p <- ggplot(plot_dt, aes(x = period, y = per_mean, group = facet_label, color = 
     plot.title = element_text(face = "bold")
   )
 
-print(p)
+p
 
 cairo_pdf("../Figures/BIOGEOGRAPHY/change_per.pdf", width = 10, height = 10) 
 

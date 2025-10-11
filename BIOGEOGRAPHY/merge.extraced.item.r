@@ -418,6 +418,10 @@ xxx<-authors.df.full[!country_iso3 %in% gdp_final$country_iso3]
 table(xxx$journal)
 View(xxx)
 
+gdp_final.item<-gdp_final[between(year, 2010, 2025)]
+gdp_final.item<-unique(gdp_final.item[, c("country_iso3", "type")])
+gdp_final.item.N<-gdp_final.item[, .(N=.N), by=list(type)]
+fwrite(gdp_final.item.N, "../Data/BIOGEOGRAPHY/gdp.N.csv")
 authors.df.full.gpd<-merge(authors.df.full, gdp_final, by=c("country_iso3", "year"))
 authors.df.full.gpd<-authors.df.full.gpd[type!=""]
 gdp_type_numeric_mapping <- c(

@@ -9,7 +9,7 @@ library(SnowballC)
 library(topicmodels)
 library(tidytext)
 library(wordcloud)
-
+library(Rtsne)
 library(dplyr)
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 
@@ -52,7 +52,7 @@ if (F){
   
 }
 full.text<-readRDS("../Data/BIOGEOGRAPHY/full.text.rda")
-#authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.fixed.rda")
+authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.fixed.rda")
 #keywords<-keywords[doi %in% unique(authors.df.full.gpd$doi)]
 
 #keywords$keyword<-toupper(keywords$keyword)
@@ -60,12 +60,13 @@ full.text<-readRDS("../Data/BIOGEOGRAPHY/full.text.rda")
 
 # *** CRITICAL PARAMETER: The number of topics (k) to discover ***
 # This is a parameter you should experiment with. A good starting point is 30.
-
-num_topics <- 100
+full.text<-full.text[between(year, 2010, 2025)]
+range<-"2010"
+num_topics <- 10
 
 for (num_topics in seq(10, 100, by=10)){
   print(num_topics)
-  target<-sprintf("../Data/BIOGEOGRAPHY/lda_model_n_topics_%d.rda", num_topics)
+  target<-sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/lda_model_n_topics_%d.rda", range, num_topics)
   if (file.exists(target)){
     next()
   }
@@ -141,19 +142,56 @@ for (num_topics in seq(10, 100, by=10)){
   # Use tidytext's tidy() function to extract the per-topic-per-term probabilities (beta)
   topics_beta <- tidy(lda_model, matrix = "beta")
   setDT(topics_beta) # Convert to data.table for efficiency
-  saveRDS(topics_beta, sprintf("../Data/BIOGEOGRAPHY/topics_beta_n_topics_%d.rda", num_topics))
+  saveRDS(topics_beta, sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/topics_beta_n_topics_%d.rda", 
+                               range, num_topics))
   
   # Find the top 100 terms within each topic
   top_terms_per_topic <- topics_beta[, .SD[order(-beta)][1:100], by = topic]
-  fwrite(top_terms_per_topic, sprintf("../Data/BIOGEOGRAPHY/topic.term_n_topics_%d.csv", num_topics))
+  fwrite(top_terms_per_topic, sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/topic.term_n_topics_%d.csv", 
+                                      range, num_topics))
   
   
   # Extract the per-document-per-topic probabilities (gamma)
   documents_gamma <- tidy(lda_model, matrix = "gamma")
   setDT(documents_gamma) # Convert to data.table
-  saveRDS(documents_gamma, sprintf("../Data/BIOGEOGRAPHY/documents_gamma_n_topics_%d.rda", num_topics))
+  saveRDS(documents_gamma, sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/documents_gamma_n_topics_%d.rda", 
+                                   range, num_topics))
   
 }
+num_topics<-10
+
+lda_model<-readRDS(sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/lda_model_n_topics_%d.rda", range, num_topics))
+doc_topic_matrix <- posterior(lda_model)$topics 
+print(dim(doc_topic_matrix))
+
+tsne_result <- Rtsne(
+  doc_topic_matrix,
+  dims = 2,
+  perplexity = 10,
+  max_iter = 500,
+  check_duplicates = FALSE
+)
+
+tsne_df <- as.data.frame(tsne_result$Y)
+colnames(tsne_df) <- c("X", "Y")
+
+dominant_topic_index <- apply(doc_topic_matrix, 1, which.max)
+tsne_df$Dominant_Topic <- factor(dominant_topic_index)
+
+print(head(tsne_df))
+full.text$X<-tsne_df$X
+full.text$Y<-tsne_df$Y
+keywords_dt <- full.text[, c("doi", "full.text", "X", "Y")]
+keywords_dt$doc_id<-as.character(seq_along(full.text$full.text))
+
+documents_gamma<-readRDS(sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/documents_gamma_n_topics_%d.rda", 
+                                 range, num_topics))
+topics_beta<-readRDS(sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/topics_beta_n_topics_%d.rda", 
+                             range, num_topics))
+
+documents_gamma.N<-documents_gamma[, .(N=.N), by=list(document)]
+topics_beta.N<-topics_beta[,.(N=.N), by=list(topic)]
+
 # For each document, find the topic with the highest gamma probability
 top_topic_for_doc <- documents_gamma[, .SD[which.max(gamma)], by = document]
 top_topic_for_doc[gamma==min(top_topic_for_doc$gamma)]
@@ -163,26 +201,115 @@ top_topic_for_doc[document=="1383"]
 topic_for_doc<-documents_gamma[gamma>threshold]
 # Merge the results with the original keywords
 # The 'document' column format is 'doc_id', which we use for the join
-results_dt <- keywords_dt_filtered[topic_for_doc, on = .(doc_id = document)]
-setnames(results_dt, c("doi","original_keyword",  "doc_id", "topic", "probability"))
+results_dt <- keywords_dt[topic_for_doc, on = .(doc_id = document)]
+setnames(results_dt, c("doi","original_keyword", "X", "Y", "doc_id", "topic", "probability"))
+
 setorder(results_dt, topic, -probability)
 
-final.result<-merge(results_dt, full.text, by="doi")
+final.result<-merge(results_dt, full.text, by=c("doi", "X", "Y"))
 
-topics<-fread("../Data/BIOGEOGRAPHY/topics.csv")
+topics<-fread(sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/topics_%d.csv", range, num_topics))
 final.result<-merge(final.result, topics, by="topic")
 
-saveRDS(final.result, "../Data/BIOGEOGRAPHY/final.topic.result.rda")
+saveRDS(final.result, sprintf("../Data/BIOGEOGRAPHY/LDA.Since.%s/final.topic.result_%d.rda", range, num_topics))
+final.result.author<-merge(final.result, authors.df.full.gpd[is_corresponding_author==T],
+                           by=c("doi", "journal", "year"))
 final.result$title<-NULL
 final.result$full.text<-NULL
 final.result$Interpretation<-NULL
 final.result$keyword<-NULL
 final.result$original_keyword<-NULL
 final.result$abstract<-NULL
+
+
+r=1
+
+dt.list<-list()
+for (r in c(1:10)){
+  dt_sampled <- final.result.author[, .SD[sample(.N, size = min(.N, 100))], by = list(country.group, year)]
+  dt_sampled.N<-dt_sampled[,.(N=.N, rep=r), by=list(year, country.group, Topic_Name)]
+  dt.list[[r]]<-dt_sampled.N
+}
+dt.all.author<-rbindlist(dt.list)
+
+
+ggplot(dt.all.author, aes(x=Topic_Name, y=N, color=country.group))+
+  geom_boxplot()+
+  labs(y="Number of papers")+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5),
+    panel.grid.major = element_line(colour = "grey92", linewidth = 0.5),
+    panel.grid.minor = element_line(colour = "grey92", linewidth = 0.25),
+    axis.line = element_blank(),
+    plot.background = element_rect(fill = "white", colour = NA),
+    axis.ticks = element_line(colour = "black")
+  )
+
+ggplot(final.result.author, aes(x=X, y=Y))+
+  stat_density_2d_filled(
+    aes(alpha = after_stat(level), fill = country.group),
+    contour_var = "density",
+    show.legend = FALSE # 隐藏密度的图例
+  )+facet_wrap(~country.group)
+
+
+ggplot(final.result, aes(x=X, y=Y, color=journal))+
+  stat_density_2d_filled(
+    aes(alpha = after_stat(level), fill = journal),
+    contour_var = "density",
+    show.legend = FALSE # 隐藏密度的图例
+  )+facet_grid(year~journal)
+
+final.result.N.year<-final.result[,.(N=.N), by=list(year, journal)]
+r=1
+
+dt.list<-list()
+for (r in c(1:10)){
+  dt_sampled <- final.result[, .SD[sample(.N, size = min(.N, 100))], by = list(journal, year)]
+  dt_sampled.N<-dt_sampled[,.(N=.N, rep=r), by=list(year, journal, Topic_Name)]
+  dt.list[[r]]<-dt_sampled.N
+}
+dt.all<-rbindlist(dt.list)
+
+
+all.topic<-dt.all[,.(N=sum(N)), by=list(Topic_Name, rep)]
+ggplot(dt.all, aes(x=Topic_Name, y=N, color=journal))+#geom_point()+
+  geom_boxplot()+
+  labs(y="Number of papers")+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5),
+    panel.grid.major = element_line(colour = "grey92", linewidth = 0.5),
+    panel.grid.minor = element_line(colour = "grey92", linewidth = 0.25),
+    axis.line = element_blank(),
+    plot.background = element_rect(fill = "white", colour = NA),
+    axis.ticks = element_line(colour = "black")
+  )
+
+ggplot(all.topic, aes(x=Topic_Name, y=N))+geom_point()+geom_boxplot()+
+  labs(y="Number of papers")+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.5),
+    panel.grid.major = element_line(colour = "grey92", linewidth = 0.5),
+    panel.grid.minor = element_line(colour = "grey92", linewidth = 0.25),
+    axis.line = element_blank(),
+    plot.background = element_rect(fill = "white", colour = NA),
+    axis.ticks = element_line(colour = "black")
+  )
+
+
 final.result.N<-final.result[,.(N=.N), by=list(year, journal, Topic_Name)]
 ggplot(final.result.N)+geom_line(aes(x=year, y=N, color=Topic_Name))+
   facet_wrap(~journal, ncol=1, scale="free")+
-  theme(legend.position = "none")
+  theme()
 final.result.N.all<-final.result[,.(N=.N), by=list(journal,Topic_Name)]
 ggplot(final.result)+geom_histogram(aes(x=Topic_Name), stat="count")+facet_wrap(~journal, ncol=1)
 
@@ -232,3 +359,4 @@ wordcloud(words = final.result.N.all[journal=="GLOBAL ECOLOGY AND BIOGEOGRAPHY"]
           rot.per = 0.3,
           colors = RColorBrewer::brewer.pal(8, "Dark2"),
           scale = c(3, 0.5))
+

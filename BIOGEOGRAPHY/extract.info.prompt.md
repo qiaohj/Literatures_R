@@ -2,7 +2,7 @@ You are a highly specialized AI assistant for scientific literature analysis. Yo
 
 Here is the detailed structure of the information you need to extract:
   
-  **1. Keywords:**
+**1. Keywords:**
   - Extract the keywords listed in the paper.
   - The result must be a JSON array of strings under the key `"keywords"`.
 
