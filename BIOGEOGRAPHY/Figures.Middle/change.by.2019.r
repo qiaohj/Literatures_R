@@ -4,7 +4,34 @@ library(forcats)
 library(ggrepel)
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
-authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.fixed.rda")
+
+authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.rda")
+authors.df.full.gpd<-authors.df.full.gpd[between(year, 2010, 2025)]
+authors.df.full.gpd$country.group<-""
+authors.df.full.gpd[country_name %in% c("Hong Kong SAR, China", "Taiwan, China"), country_name:="China"]
+authors.df.full.gpd[country_iso3 %in% unique(authors.df.full.gpd[country_name=="China"]$country_iso3), 
+                    country_iso3:="CHN"]
+authors.df.full.gpd[country_iso3 %in% c("GRL"), country_iso3:="DNK"]
+
+
+article.N<-authors.df.full.gpd[, .(N.article=length(unique(doi))),
+                               by=list(country_name)]
+setorderv(article.N, "N.article", -1)
+
+article.N.top10<-article.N[1:9]
+
+authors.df.full.gpd[country_name %in% article.N.top10$country_name, country.group:=country_name]
+authors.df.full.gpd[country.group=="", country.group:=sprintf("Others - %s", gdp.type)]
+authors.df.full.gpd$journal.abbr<-factor(authors.df.full.gpd$journal, 
+                                levels=c("DIVERSITY AND DISTRIBUTIONS",
+                                         "ECOGRAPHY",
+                                         "GLOBAL ECOLOGY AND BIOGEOGRAPHY",
+                                         "JOURNAL OF BIOGEOGRAPHY"),
+                                labels=c("DDI", "ECOG", "GEB", "JBI"))
+full.text<-readRDS("../Data/BIOGEOGRAPHY/full.text.rda")
+authors.df.full.gpd<-authors.df.full.gpd[doi %in% full.text$doi]
+saveRDS(authors.df.full.gpd, "../Data/BIOGEOGRAPHY/authors.fixed.rda")
+
 
 item<-authors.df.full.gpd[is_corresponding_author==T]
 table(item$country.group)
@@ -82,10 +109,10 @@ p <- ggplot(plot_dt, aes(x = period, y = per_mean, group = facet_label, color = 
   geom_line(aes(), linewidth = 1.2) +
   geom_point(aes(shape = period), size = 3) +
   geom_text_repel(data=plot_dt[period=="Post-2019"],
-                  aes(x = 2, y = per_mean, 
-                      label = paste0("", sprintf("%.2f%%", mean_diff * 100), 
-                                     Result_Category, sprintf("(%s)", country.group))),
-                  hjust = -1, vjust=1, direction = "y", size = 3.5) +
+    aes(x = 2, y = per_mean, 
+                label = paste0("", sprintf("%.2f%%", mean_diff * 100), 
+                               Result_Category, sprintf("(%s)", country.group))),
+            hjust = -1, vjust=1, direction = "y", size = 3.5) +
   scale_color_manual(values = c(
     "⬆*" = "#e31a1c",
     "⬆**" = "#e31a1c",
@@ -104,7 +131,7 @@ p <- ggplot(plot_dt, aes(x = period, y = per_mean, group = facet_label, color = 
   labs(
     #title = "Percentage Change Comparison: Pre-2019 vs. Post-2019",
     #subtitle = "Wilcoxon Rank-Sum Test used for significance (p < 0.05)",
-    y = "Mean Percentage (per year)",
+    y = "Mean Percentage (per)",
     x = "Period",
     color = "Statistical Outcome"
   ) +
@@ -115,20 +142,18 @@ p <- ggplot(plot_dt, aes(x = period, y = per_mean, group = facet_label, color = 
       size = 3 
     )
   ))+
-  theme_bw() +
+  theme_minimal() +
   theme(
     legend.position = "none",
-    strip.text = element_text(face = "bold", size = 14),
+    strip.text = element_text(face = "bold"),
     axis.title.x = element_blank(),
     panel.grid.minor = element_blank(),
-    plot.title = element_text(face = "bold"),
-    
+    plot.title = element_text(face = "bold")
   )
 
 p
 
-fwrite(plot_dt, "../Figures/BIOGEOGRAPHY/Figure.change.by.2019/change.by.2019.csv")
-cairo_pdf("../Figures/BIOGEOGRAPHY/Figure.change.by.2019/change.by.2019.pdf", width = 10, height = 10) 
+cairo_pdf("../Figures/BIOGEOGRAPHY/change_per.pdf", width = 10, height = 10) 
 
 print(p) 
 dev.off()

@@ -21,6 +21,8 @@ spdf_world <- ne_download(scale = 110, type = "countries")
 spdf_world[which(spdf_world$ISO_A3_EH %in% c("HKG", "TWN", "MAC")), "ISO_A3_EH"]<-"CHN"
 spdf_world[which(spdf_world$ADM0_A3 %in% c("GRL")), "ISO_A3_EH"]<-"DNK"
 spdf_world<-spdf_world[which(spdf_world$ISO_A3_EH!="ATA"),]
+write_sf(spdf_world, "../Figures/BIOGEOGRAPHY/Figure.Map/Shape/world.kml", append = F)
+
 spdf_world$ISO_A3_EH
 authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.fixed.rda")
 
