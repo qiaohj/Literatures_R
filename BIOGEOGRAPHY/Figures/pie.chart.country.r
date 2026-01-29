@@ -128,6 +128,10 @@ N.country<-authors.df.full.gpd[between(year, 2010, 2025) & (is_first_author==T |
                                .(N.articles=length(unique(doi)),
                                  N.yeaer=length(unique(year))), 
                                by=c("country_iso3", "country_name", "gdp.type")]
+sum(N.country[gdp.type=="H"]$N.articles)/sum(N.country$N.articles)
+
+sum(N.country[country_iso3=="USA"]$N.articles)/sum(N.country$N.articles)
+
 
 p1<-generate.pie.data(N.country, "first.co.author",
                       "(A) First, co-first and corresponding authors")

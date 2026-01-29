@@ -29,8 +29,8 @@ journal<-"JOURNAL OF BIOGEOGRAPHY"
 issn.str<-sprintf("(%s OR %s)", "1365-2699", "0305-0270")
 
 #DDI:Online ISSN:1472-4642 Print ISSN:1366-9516
-#journal<-"DIVERSITY AND DISTRIBUTIONS"
-#issn.str<-sprintf("(%s OR %s)", "1472-4642", "1366-9516")
+journal<-"DIVERSITY AND DISTRIBUTIONS"
+issn.str<-sprintf("(%s OR %s)", "1472-4642", "1366-9516")
 
 query <- sprintf("(IS=%s)",
                  issn.str)
@@ -41,7 +41,7 @@ n_refs <- wos_search(query, database)
 if (n_refs == 0) {
   next()
 }
-folder<-sprintf("/media/huijieqiao/NAS/Literature/BIOGEOGRAPHY/WOS/%s", journal)
+folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/WOS/%s", journal)
 if (!dir.exists(folder)){
   dir.create(folder)
 }
@@ -87,7 +87,7 @@ for (page in pages) {
   
 }
 
-folder<-sprintf("/media/huijieqiao/NAS/Literature/BIOGEOGRAPHY/WOS/%s", journal)
+folder<-sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/WOS/%s", journal)
 contents<-list.files(folder, pattern="\\.rda")
 
 all<-list()
@@ -153,10 +153,11 @@ all.df[, c("doi.prefix", "doi.suffix") := {
   list(sapply(parts, `[`, 1), sapply(parts, `[`, 2))
 }]
 all.df$pdf.path.hold<-sprintf("%s/%s/%s.PDF", 
-                        "/media/huijieqiao/NAS/Literature/PDF", journal, 
+                        "/media/huijieqiao/NAS_Share/Literature/PDF", journal, 
                         URLencode(toupper(all.df$doi.suffix), reserved = T))
-saveRDS(all.df, sprintf("/media/huijieqiao/NAS/Literature/BIOGEOGRAPHY/WOS/%s.rda", journal))
+saveRDS(all.df, sprintf("/media/huijieqiao/WD22T_11/literatures/Data/BIOGEOGRAPHY/WOS/%s.rda", journal))
 d.item<-all.df[published_year==2025]
+#d.item<-all.df
 for (i in rev(c(1:nrow(d.item)))){
   item<-d.item[i]
   print(paste(i, nrow(d.item)))

@@ -18,12 +18,15 @@ source("Download.PDF/getArticles.r")
 source("RAG.LLM/xml2csv.r")
 crossref.year<-2025
 if (F){
-  all_journal_folders<-gsub("../Data", "/media/huijieqiao/NAS/Literature", all_journal_folders)
+  all_journal_folders<-gsub("../Data", "/media/huijieqiao/NAS_Share/Literature", all_journal_folders)
+  
   all_journal_folders<-gsub("//", "/", all_journal_folders)
-  saveRDS(all_journal_folders, sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+  
+  all_journal_folders<-gsub("/media/huijieqiao/NAS/Literature", "/media/huijieqiao/NAS_Share/Literature", all_journal_folders)
+  saveRDS(all_journal_folders, sprintf("/media/huijieqiao/NAS_Share/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
 }
-all_journal_folders<-readRDS(sprintf("/media/huijieqiao/NAS/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
-journals<-readRDS("/media/huijieqiao/NAS/Literature/JCR/Target.Journals.rda")
+all_journal_folders<-readRDS(sprintf("/media/huijieqiao/NAS_Share/Literature/datatable_crossref/CrossRef_By_Journal.%d.rda", crossref.year))
+journals<-readRDS("/media/huijieqiao/NAS_Share/Literature/JCR/Target.Journals.rda")
 
 
 
@@ -97,24 +100,6 @@ for (i in c(1:nrow(target.journals))){
   articles<-articles[!grepl("Correction to", title)]
   
   
-  if (F){
-    for (j in c(1:length(jsons))){
-      json.f<-jsons[j]
-      doi.item<-basename(json.f)
-      doi.item<-gsub("\\.json\\.rda", "", doi.item)
-      article.item<-articles[doi==doi.item]
-      if (nrow(article.item)==0){
-        next()
-      }
-      pdf.path<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s/%s.PDF",
-                        article.item$journal, 
-                        article.item$doi)
-      text<-pdf_text(pdf.path)
-      if (grepl("CORRIGENDUM", toupper(str_c(text, collapse = "\n")))){
-        
-      }
-    }
-  }
   #jsons<-jsons[sample(length(jsons), length(jsons))]
   
   for (j in c(1:length(jsons))){
@@ -128,57 +113,12 @@ for (i in c(1:nrow(target.journals))){
     }
     json<-readRDS(json.f)
     xml.path<-sprintf("../Data/BIOGEOGRAPHY/GROBID.XML/%s.xml", doi.item)
-    llm.json.path<-sprintf("/media/huijieqiao/NAS/Literature/LLM.Parse/%s/%s.json.rda",
+    llm.json.path<-sprintf("/media/huijieqiao/NAS_Share/Literature/LLM.Parse/%s/%s.json.rda",
                            item$Title, doi.item)
-    pdf.path<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s/%s.PDF",
+    pdf.path<-sprintf("/media/huijieqiao/NAS_Share/Literature/PDF/%s/%s.PDF",
                       article.item$journal, 
                       article.item$doi)
-    if (F){
-      if (!file.exists(xml.path)){
-        
-        if (length(pdf.path)==0){
-          print("not found")
-          print(doi.item)
-          next()
-        }
-        pdf.path<-pdf.path[1]
-        if (!file.exists(pdf.path)){
-          next()
-        }
-        res <- tryCatch({
-          POST(
-            grobid_url,
-            body = list(
-              input = upload_file(pdf.path),
-              segmentSentences=0,
-              includeRawAffiliations=1,
-              consolidatFunders=1)
-          )},
-          error = function(e) {
-            message("Error: ", e$message)
-            return(NULL)
-          },
-          warning = function(w) {
-            message("Warning: ", w$message)
-          },
-          finally = {
-            
-          })
-        
-        if (is.null(res)){
-          print(pdf.path)
-          print("Paste error")
-          next()
-        }
-        if (status_code(res) == 200) {
-          xml_content <- content(res, as = "text", encoding = "UTF-8")
-          writeLines(xml_content, xml.path)
-        } else {
-          print(pdf.path)
-          cat("Error:", status_code(res), "\n")
-        }
-      }
-    }
+    
     if (!file.exists(xml.path) & !file.exists(llm.json.path)){
       missing.pdfs<-c(missing.pdfs, pdf.path)
     }else{
@@ -290,7 +230,7 @@ articles.df<-rbindlist(articles.list)
 for (i in c(1:length(missing.pdfs))){
   ppp<-missing.pdfs[i]
   print(paste(i, length(missing.pdfs), ppp))
-  if (ppp %in% c("/media/huijieqiao/NAS/Literature/PDF/JOURNAL OF BIOGEOGRAPHY/JBI.12909.PDF")){
+  if (ppp %in% c("/media/huijieqiao/NAS_Share/Literature/PDF/JOURNAL OF BIOGEOGRAPHY/JBI.12909.PDF")){
     abs.str<-""
   }else{
     json.path<-gsub("/PDF/", "/LLM.Parse/", ppp)

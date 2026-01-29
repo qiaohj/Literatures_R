@@ -3,10 +3,10 @@ library(tesseract)
 library(stringr)
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
-raw.folder<-"/media/huijieqiao/WD22T_11/literatures/Data/Vegetation/RAW.BOOK"
+raw.folder<-"/media/huijieqiao/WD22T_11/literatures/Data/BUGS/RAW"
 pdfs<-list.files(raw.folder, pattern="\\.pdf", ignore.case=T, recursive=T, full.names =T)
-ocr_folder<-"/media/huijieqiao/WD22T_11/literatures/Data/Vegetation/OCR.BOOK"
-temp.folder<-"/media/huijieqiao/WD22T_11/literatures/Data/Vegetation/TEMP"
+ocr_folder<-"/media/huijieqiao/WD22T_11/literatures/Data/BUGS/OCR.BOOK"
+temp.folder<-"/media/huijieqiao/WD22T_11/literatures/Data/BUGS/TEMP"
 output_file_template <- file.path(temp.folder, "%s.page%04d.png")
 pdf<-pdfs[1]
 tra_journals<-c("台湾自然史（2）台湾植被志（第二卷）高山植被带与高山植物（上）",
@@ -55,11 +55,11 @@ for (i in c(1:length(pdfs))){
     output_base <- file.path(temp_dir, sprintf("page_%04d", i))
     output_pdf_page <- paste0(output_base, ".pdf")
     output_pdf_page.txt <- paste0(output_base, ".txt")
-    if (file.name.x %in% tra_journals){
-      langs<-"eng+chi_tra"
-    }else{
+    #if (file.name.x %in% tra_journals){
+    #  langs<-"eng+chi_tra"
+    #}else{
       langs<-"eng+chi_sim"
-    }
+    #}
     
     command <- sprintf('"%s/tesseract" %s %s -l %s pdf txt',
                        tesseract_cmd,

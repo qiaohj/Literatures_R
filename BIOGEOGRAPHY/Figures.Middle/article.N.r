@@ -5,6 +5,9 @@ library(ggrepel)
 
 setwd("/media/huijieqiao/WD22T_11/literatures/Literatures_R")
 articles<-readRDS("../Data/BIOGEOGRAPHY/articles.rda")
+
+item<-articles[between(year, 2010, 2025)]
+table(item$journal)
 authors.df.full.gpd<-readRDS("../Data/BIOGEOGRAPHY/authors.fixed.rda")
 
 table(articles$year)

@@ -16,7 +16,7 @@ articles.N$journal.abbr<-factor(articles.N$journal,
                                          "JOURNAL OF BIOGEOGRAPHY"),
                                 labels=c("DDI", "ECOG", "GEB", "JBI"))
 
-custom_colors <- c("#e31a1c", "#33a02c", "#1f78b4", "#ff7f00")
+custom_colors <- c("#E69F00", "#56B4E9", "#009E73", "#CC79A7")
 journal_values <- c("DDI", "ECOG", "GEB", "JBI")
 color_map <- setNames(custom_colors, journal_values)
 fwrite(articles.N, "../Figures/BIOGEOGRAPHY/Figure.N.article.year/N_paper_per_year.csv")

@@ -48,7 +48,7 @@ gen_config <- list(
 )
 
 
-models<-c("gemini-2.5-pro", "gemini-flash-latest", "gemini-2.0-flash")
+models<-c("gemini-2.5-pro", "gemini-flash-latest", "gemini-2.0-flash", "gemini-3-flash")
 mstr<-models[2]
 clean_text <- function(text) {
   if (is.null(text) || nchar(text) == 0) {
@@ -71,7 +71,7 @@ target.journals<-data.table(Title=c("ECOGRAPHY", "DIVERSITY AND DISTRIBUTIONS",
 i=1
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
-  folder<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s", item$Title)
+  folder<-sprintf("/media/huijieqiao/NAS_Share/Literature/PDF/%s", item$Title)
   target<-sprintf("../Data/BIOGEOGRAPHY/Extracted.Items/%s", item$Title)
   if (dir.exists(target)){
     #next()
@@ -110,7 +110,7 @@ for (i in c(1:nrow(target.journals))){
         
         #file.remove(target.file)
       }
-      #next()
+      next()
     }
     #next()
     

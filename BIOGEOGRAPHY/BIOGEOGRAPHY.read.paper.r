@@ -72,8 +72,8 @@ missing.pdfs<-readRDS("../Data/BIOGEOGRAPHY/missing.abstract.pdf.rda")
 i=1
 for (i in c(1:nrow(target.journals))){
   item<-target.journals[i]
-  folder<-sprintf("/media/huijieqiao/NAS/Literature/PDF/%s", item$Title)
-  target<-sprintf("/media/huijieqiao/NAS/Literature/LLM.Parse/%s", item$Title)
+  folder<-sprintf("/media/huijieqiao/NAS_Share/Literature/PDF/%s", item$Title)
+  target<-sprintf("/media/huijieqiao/NAS_Share/Literature/LLM.Parse/%s", item$Title)
   if (dir.exists(target)){
     #next()
   }else{
@@ -237,8 +237,12 @@ for (i in c(1:nrow(target.journals))){
       message("Error: ", e$message)
       
       if (grepl("429", e$message, ignore.case = TRUE) || grepl("exceeded your current quota", e$message, ignore.case = TRUE)){
+        removed.spis<-apis[api.index]
         apis<<-apis[-api.index]
-        print(sprintf("remove api index %d from apis, %d api.keys left.", api.index, nrow(apis)))
+        print(sprintf("%s : %s remove api index %d from apis, %d api.keys left.", 
+                      removed.spis$gmail,
+                      removed.spis$gemini.api,
+                      api.index, nrow(apis)))
         file.remove(target.file)
         if (nrow(apis)==0){
           stop("no api left. stop");
